@@ -4,7 +4,7 @@ using Unity.Mathematics;
 
 namespace Components
 {
-    public struct InputLeftHand : IComponentData
+    public struct InputHand : IComponentData
     {
         public float3 position;
         public quaternion rotation;
