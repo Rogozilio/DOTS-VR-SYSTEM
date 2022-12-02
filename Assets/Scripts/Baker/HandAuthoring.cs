@@ -5,12 +5,7 @@ using Components;
 using Tags;
 using Unity.Entities;
 using UnityEngine;
-
-public enum HandType
-{
-    Left,
-    Right
-}
+using Enums;
 
 public class HandAuthoring : MonoBehaviour
 {
