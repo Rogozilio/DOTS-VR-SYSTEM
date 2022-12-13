@@ -1,26 +1,68 @@
 ﻿using System;
 using System.Collections.Generic;
 using UnityEditor;
+using UnityEditor.SceneManagement;
 using UnityEngine;
 
 namespace Scripts
 {
+    [Serializable]
+    public struct HandInfo
+    {
+        public List<string> indents;
+        public List<Transform> values;
+        public List<bool> toggles;
+        public HandInfo(bool isAutoInit = true)
+        {
+            if (isAutoInit)
+            {
+                indents = new List<string>();
+                values = new List<Transform>();
+                toggles = new List<bool>();
+                return;
+            }
+
+            indents = null;
+            values = null;
+            toggles = null;
+        }
+        public void Clear()
+        {
+            indents = new List<string>();
+            values = new List<Transform>();
+            toggles = new List<bool>();
+        }
+    }
+
+    [Serializable]
+    public struct ColorFingers
+    {
+        public bool isForEachFinger;
+        public List<Color32> bones;
+        public List<Color32> joints;
+    }
+
     [ExecuteInEditMode]
     public class HandPoseHelper : MonoBehaviour
     {
         public bool isSelectParentHand = true;
-        [Space] public GameObject leftHandPrefab;
-        public GameObject rightHandPrefab;
-        [Space] [HideInInspector] public List<Transform> joints;
+        [Space] [HideInInspector] public GameObject leftHandPrefab;
+        [HideInInspector] public GameObject rightHandPrefab;
+        [HideInInspector] [SerializeField] public List<Transform> leftHandJoints;
+        [HideInInspector] [SerializeField] public List<Transform> rightHandJoints;
 
-        private GameObject _leftHand;
-        private GameObject _rightHand;
+        [HideInInspector] [SerializeField] private GameObject _leftHand;
+        [HideInInspector] [SerializeField] private GameObject _rightHand;
+
+        [HideInInspector] public HandInfo leftHandInfo;
+        [HideInInspector] public HandInfo rightHandInfo;
+
+        public ColorFingers colorFingers;
 
         private Vector3 _offsetLeftHand;
         private Vector3 _offsetRightHand;
 
         private GameObject _mainSelectObject;
-
 
         private bool IsVisibleHands
         {
@@ -43,10 +85,40 @@ namespace Scripts
             }
         }
 
-        private void OnEnable()
+        public void OnEnable()
         {
-            _leftHand = Instantiate(leftHandPrefab, Vector3.zero, Quaternion.identity, transform);
-            _rightHand = Instantiate(rightHandPrefab, Vector3.zero, Quaternion.identity, transform);
+            if (!leftHandPrefab || !rightHandPrefab)
+            {
+                Debug.LogError("Add prefab for Left or/and Right hand");
+                return;
+            }
+            
+            if (transform.childCount > 0)
+            {
+                _leftHand = transform.GetChild(0).gameObject;
+                _rightHand = transform.GetChild(1).gameObject;
+            }
+            else
+            {
+                _leftHand = Instantiate(leftHandPrefab, Vector3.zero, Quaternion.identity, transform);
+                _rightHand = Instantiate(rightHandPrefab, Vector3.zero, Quaternion.identity, transform);
+                
+                _leftHand.AddComponent<DrawGizmosHand>().joints = leftHandJoints;
+                _rightHand.AddComponent<DrawGizmosHand>().joints = rightHandJoints;
+                
+                if (leftHandInfo.values.Count == 0)
+                {
+                    SetHandInfo(leftHandInfo, _leftHand.transform);
+                    SetHandInfo(rightHandInfo, _rightHand.transform);
+                }
+                else
+                {
+                    leftHandInfo.values.Clear();
+                    rightHandInfo.values.Clear();
+                    RefreshTransformJoints(leftHandInfo, _leftHand.transform);
+                    RefreshTransformJoints(rightHandInfo, _rightHand.transform);
+                }
+            }
         }
 
         private void Update()
@@ -65,12 +137,6 @@ namespace Scripts
             SetMainSelectObject = selectObj;
             SetOffsetHands(selectObj);
             SetPositionHands(selectObj);
-        }
-
-        private void OnDisable()
-        {
-            if (_leftHand) DestroyImmediate(_leftHand);
-            if (_rightHand) DestroyImmediate(_rightHand);
         }
 
         private void SetOffsetHands(GameObject selectObj)
@@ -113,112 +179,200 @@ namespace Scripts
 
             return Selection.activeGameObject;
         }
+
+        public void SetHandInfo(HandInfo handInfo, Transform transform, string space = "├",
+            string line = "")
+        {
+            space = transform.GetSiblingIndex() == transform.parent?.childCount - 1
+                ? space.Replace("├", "└")
+                : space.Replace("└", "├");
+
+            handInfo.indents.Add(transform.parent ? space : "    ");
+            handInfo.values.Add(transform);
+            handInfo.toggles.Add(false);
+
+            if (!UseVerticalLine(transform, ref space, ref line))
+                space = "      " + space;
+
+            for (var i = 0; i < transform.childCount; i++)
+            {
+                var child = transform.GetChild(i);
+                SetHandInfo(handInfo, child, space, line);
+            }
+        }
+
+        private bool UseVerticalLine(Transform transform, ref string space, ref string line)
+        {
+            var isNewLine = transform.childCount > 0 && transform.GetSiblingIndex() < transform.parent?.childCount - 1;
+
+            if (isNewLine || line.Length > 0)
+            {
+                line = (isNewLine) ? "│  " : "      ";
+
+                if (space.Contains("└"))
+                    space = space.Split("└")[0] + line + "└";
+                else if (space.Contains("├"))
+                    space = space.Split("├")[0] + line + "├";
+
+                return true;
+            }
+
+            return false;
+        }
+
+        public void RefreshTransformJoints(HandInfo handInfo, Transform newValue)
+        {
+            handInfo.values.Add(newValue);
+
+            for (var i = 0; i < newValue.childCount; i++)
+            {
+                var child = newValue.GetChild(i);
+                RefreshTransformJoints(handInfo, child);
+            }
+        }
+
+        public void RebuildJoints()
+        {
+            leftHandJoints.Clear();
+            rightHandJoints.Clear();
+
+            for (var i = 0; i < leftHandInfo.toggles.Count; i++)
+            {
+                if (leftHandInfo.toggles[i])
+                    leftHandJoints.Add(leftHandInfo.values[i]);
+            }
+
+            for (var i = 0; i < rightHandInfo.toggles.Count; i++)
+            {
+                if (rightHandInfo.toggles[i])
+                    rightHandJoints.Add(rightHandInfo.values[i]);
+            }
+        }
     }
 
     [CustomEditor(typeof(HandPoseHelper))]
     public class HandPoseHelperEditor : Editor
     {
-        private List<string> _space;
-        private List<string> _name;
-        private List<bool> _toggles;
+        private HandPoseHelper _handPoseHelper;
+
+        private SerializedProperty _leftHandPrefab;
+        private SerializedProperty _rightHandPrefab;
+
+        private Transform _activeJoint;
+
+        private bool _isFoldOutHand;
+        private bool _isDisplayOneHand;
+        private bool _isRootPrefab;
 
         private void OnEnable()
         {
-            var handPoseHelper = (HandPoseHelper)target;
+            _handPoseHelper = (HandPoseHelper)target;
 
-            _space = new List<string>();
-            _name = new List<string>();
-            _toggles = new List<bool>();
-
-            if (!handPoseHelper.leftHandPrefab || !handPoseHelper.rightHandPrefab)
+            if (!_handPoseHelper.leftHandPrefab || !_handPoseHelper.rightHandPrefab)
             {
                 Debug.LogError("Add prefab for Left or/and Right hand");
                 return;
             }
 
-            GetAllChild(handPoseHelper.leftHandPrefab.transform);
+            _isRootPrefab = !PrefabUtility.GetCorrespondingObjectFromSource(_handPoseHelper.gameObject);
+
+            serializedObject.Update();
+            
+            if (_isRootPrefab)
+            {
+                _leftHandPrefab = serializedObject.FindProperty("leftHandPrefab");
+                _rightHandPrefab = serializedObject.FindProperty("rightHandPrefab");
+            }
+
+            serializedObject.ApplyModifiedProperties();
         }
 
         public override void OnInspectorGUI()
         {
             base.OnInspectorGUI();
-
-            for (var i = 0; i < _name.Count; i++)
+            if (_isRootPrefab)
             {
-                GUI.skin.label.CalcSize(new GUIContent("text"));
-                GUILayout.BeginHorizontal();
-                //GUILayout.Space(_space[i] - 6);
-                GUILayout.Label("└", GUILayout.Width(GUI.skin.label.CalcSize(new GUIContent(_space[i])).x));
-                //GUILayout.Label("│", GUILayout.Width(15f));
-                _toggles[i] = GUILayout.Toggle(_toggles[i], _name[i]);
-                GUILayout.EndHorizontal();
-            }
-        }
+                EditorGUILayout.PropertyField(_leftHandPrefab);
+                EditorGUILayout.PropertyField(_rightHandPrefab);
 
-        private void GetAllChild(Transform transform, string space = "└")
-        {
-            _space.Add(space);
-            _name.Add(transform.name);
-            _toggles.Add(false);
+                serializedObject.ApplyModifiedProperties();
+                return;
+            }
+
             
-            for (var i = 0; i < transform.childCount; i++)
+
+            _handPoseHelper = (HandPoseHelper)target;
+
+            GUILayout.Space(6);
+            GUILayout.BeginHorizontal();
+            _isFoldOutHand = EditorGUILayout.Foldout(_isFoldOutHand, "Options fingers hand", true);
+            _isDisplayOneHand = GUILayout.Toggle(_isDisplayOneHand, "2 in 1",
+                GUILayout.Width(Screen.width - EditorGUIUtility.labelWidth - 25));
+            GUILayout.EndHorizontal();
+
+            if (_isFoldOutHand)
             {
-                var child = transform.GetChild(i);
-                GetAllChild(child, space + " ");
+                _handPoseHelper.RebuildJoints();
+
+                if (_isDisplayOneHand)
+                {
+                    Show2in1();
+                }
+                else
+                {
+                    ShowHierarchyHand(_handPoseHelper.leftHandInfo);
+                    GUILayout.Space(10);
+                    ShowHierarchyHand(_handPoseHelper.rightHandInfo);
+                }
+            }
+
+            serializedObject.ApplyModifiedProperties();
+        }
+
+        private bool AddElementHand(string indent, string name, bool toggle)
+        {
+            GUILayout.BeginHorizontal();
+            GUILayout.Label(indent, GUILayout.Width(GUI.skin.label.CalcSize(new GUIContent(indent)).x));
+            var result = GUILayout.Toggle(toggle, name);
+            GUILayout.EndHorizontal();
+
+            return result;
+        }
+        
+        private void ShowHierarchyHand(HandInfo handInfo)
+        {
+            for (var i = 0; i < handInfo.values.Count; i++)
+            {
+                var indent = handInfo.indents[i];
+                var value = (Transform)handInfo.values[i];
+                var toggle = handInfo.toggles[i];
+
+                handInfo.toggles[i] = AddElementHand(indent, value.name, toggle);
             }
         }
 
-        // private void OnSceneGUI()
-        // {
-        //     DrawJointButtons();
-        //     DrawJointHandle();
-        // }
-        //
-        // private void DrawJointButtons()
-        // {
-        //     // Draw a button for each joint
-        //     foreach (Transform joint in previewHand.Joints)
-        //     {
-        //         // Were one of the buttons pressed?
-        //         bool pressed = Handles.Button(joint.position, joint.rotation, 0.01f, 0.005f, Handles.SphereHandleCap);
-        //
-        //         // Did we select the same joint?
-        //         if (pressed)
-        //             activeJoint = IsSelected(joint) ? null : joint;                
-        //     }
-        // }
-        //
-        // private bool IsSelected(Transform joint)
-        // {
-        //     return joint == activeJoint;
-        // }
-        //
-        // private void DrawJointHandle()
-        // {
-        //     // If a joint is selected
-        //     if(HasActiveJoint())
-        //     {
-        //         // Draw handle
-        //         Quaternion currentRotation = activeJoint.rotation;
-        //         Quaternion newRotation = Handles.RotationHandle(currentRotation, activeJoint.position);
-        //
-        //         // Detect if handle has rotated
-        //         if (HandleRotated(currentRotation, newRotation))
-        //         {
-        //             activeJoint.rotation = newRotation;
-        //             Undo.RecordObject(target, "Joint Rotated");
-        //         }
-        //     }
-        // }
-        //
-        // private bool HasActiveJoint()
-        // {
-        //     return activeJoint;
-        // }
-        //
-        // private bool HandleRotated(Quaternion currentRotation, Quaternion newRotation)
-        // {
-        //     return currentRotation != newRotation;
-        // }
+        private void Show2in1()
+        {
+            if (_handPoseHelper.leftHandInfo.values.Count != _handPoseHelper.rightHandInfo.values.Count)
+            {
+                Debug.LogError("Left and Right hand have a different number of elements");
+                return;
+            }
+
+            for (var i = 0; i < _handPoseHelper.leftHandInfo.values.Count; i++)
+            {
+                var indent = _handPoseHelper.leftHandInfo.indents[i];
+                var toggle = _handPoseHelper.leftHandInfo.toggles[i] && _handPoseHelper.rightHandInfo.toggles[i];
+                var name = _handPoseHelper.leftHandInfo.values[i].name == _handPoseHelper.rightHandInfo.values[i].name
+                    ? _handPoseHelper.leftHandInfo.values[i].name
+                    : _handPoseHelper.leftHandInfo.values[i].name + " | " +
+                      _handPoseHelper.rightHandInfo.values[i].name;
+
+                var temporaryToggle = AddElementHand(indent, name, toggle);
+
+                _handPoseHelper.leftHandInfo.toggles[i] = temporaryToggle;
+                _handPoseHelper.rightHandInfo.toggles[i] = temporaryToggle;
+            }
+        }
     }
 }

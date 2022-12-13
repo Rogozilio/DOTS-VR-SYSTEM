@@ -11,7 +11,7 @@ namespace Editor
     [Overlay(typeof(SceneView), "Hand Pose Toolbar")]
     public class HandPoseToolbarOverlay : ToolbarOverlay
     {
-        HandPoseToolbarOverlay() : base(HandPoseButton.Id)
+        public HandPoseToolbarOverlay() : base(HandPoseButton.Id)
         {
         }
 
@@ -39,11 +39,14 @@ namespace Editor
                 {
                     if (_handPoseHelper) return;
 
+                    var root = Resources.Load<GameObject>("HandPoseHelper");
                     _handPoseHelper =
-                        (GameObject)PrefabUtility.InstantiatePrefab(Resources.Load<GameObject>("HandPoseHelper"));
+                        (GameObject)PrefabUtility.InstantiatePrefab(root);
                 }
                 else
                 {
+                    PrefabUtility.ApplyObjectOverride(_handPoseHelper.GetComponent<HandPoseHelper>(),
+                        PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(_handPoseHelper), InteractionMode.AutomatedAction);
                     if (_handPoseHelper)
                         GameObject.DestroyImmediate(_handPoseHelper);
                 }

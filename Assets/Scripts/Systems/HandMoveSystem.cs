@@ -29,7 +29,6 @@ namespace Systems
         {
             var job = new MoveHandJob();
             job.ScheduleParallel();
-            
         }
     }
     
@@ -39,7 +38,7 @@ namespace Systems
         public void Execute(ref TransformAspect transform, in InputHand inputHand)
         {
             transform.LocalPosition = inputHand.position;
-            transform.Rotation = inputHand.rotation;
+            transform.LocalRotation = inputHand.rotation;
         }
     }
 }
