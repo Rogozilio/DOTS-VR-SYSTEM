@@ -235,7 +235,7 @@ MonoBehaviour:
     isForEachFinger: 0
     bones:
     - serializedVersion: 2
-      rgba: 4279762688
+      rgba: 4278255385
     - serializedVersion: 2
       rgba: 4278255360
     - serializedVersion: 2
@@ -255,3 +255,12 @@ MonoBehaviour:
       rgba: 4278512639
     - serializedVersion: 2
       rgba: 4278512639
+  popupIndexTemplate: 0
+  saveDataSetting:
+    path: Assets/PoseSaveData
+    names:
+    - Default
+    - DefaultList
+    templates:
+    - {fileID: 11500000, guid: f636700755cd1af46b07feb904ac75fc, type: 3}
+    - {fileID: 11500000, guid: 081009bf5a4c4950998a94561b4c4703, type: 3}

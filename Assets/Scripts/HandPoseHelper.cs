@@ -1,17 +1,37 @@
 ﻿using System;
 using System.Collections.Generic;
+using Unity.Entities.UniversalDelegates;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 namespace Scripts
 {
+    [Serializable]
+    public struct HandPose
+    {
+        public Vector3 attachPosition;
+        public Quaternion attachRotation;
+        public List<Quaternion> fingerRotations;
+    }
+    
+    [Serializable]
+    public struct HandPoseData
+    {
+        public string name;
+        public HandPose leftHand;
+        public HandPose rightHand;
+    }
+    
+    
     [Serializable]
     public struct HandInfo
     {
         public List<string> indents;
         public List<Transform> values;
         public List<bool> toggles;
+
         public HandInfo(bool isAutoInit = true)
         {
             if (isAutoInit)
@@ -26,6 +46,7 @@ namespace Scripts
             values = null;
             toggles = null;
         }
+
         public void Clear()
         {
             indents = new List<string>();
@@ -40,6 +61,14 @@ namespace Scripts
         public bool isForEachFinger;
         public List<Color32> bones;
         public List<Color32> joints;
+    }
+
+    [Serializable]
+    public struct SaveDataSetting
+    {
+        public string path;
+        public List<string> names;
+        public List<MonoScript> templates;
     }
 
     [ExecuteInEditMode]
@@ -57,7 +86,10 @@ namespace Scripts
         [HideInInspector] public HandInfo leftHandInfo;
         [HideInInspector] public HandInfo rightHandInfo;
 
-        public ColorFingers colorFingers;
+        [HideInInspector] public ColorFingers colorFingers;
+
+        [HideInInspector] public int popupIndexTemplate;
+        [HideInInspector] public SaveDataSetting saveDataSetting;
 
         private Vector3 _offsetLeftHand;
         private Vector3 _offsetRightHand;
@@ -92,7 +124,7 @@ namespace Scripts
                 Debug.LogError("Add prefab for Left or/and Right hand");
                 return;
             }
-            
+
             if (transform.childCount > 0)
             {
                 _leftHand = transform.GetChild(0).gameObject;
@@ -102,10 +134,10 @@ namespace Scripts
             {
                 _leftHand = Instantiate(leftHandPrefab, Vector3.zero, Quaternion.identity, transform);
                 _rightHand = Instantiate(rightHandPrefab, Vector3.zero, Quaternion.identity, transform);
-                
+
                 _leftHand.AddComponent<DrawGizmosHand>().joints = leftHandJoints;
                 _rightHand.AddComponent<DrawGizmosHand>().joints = rightHandJoints;
-                
+
                 if (leftHandInfo.values.Count == 0)
                 {
                     SetHandInfo(leftHandInfo, _leftHand.transform);
@@ -248,6 +280,44 @@ namespace Scripts
                     rightHandJoints.Add(rightHandInfo.values[i]);
             }
         }
+
+        public HandPoseData GetHandPoseData()
+        {
+            var handPoseData = new HandPoseData();
+
+            handPoseData.leftHand.attachPosition = _offsetLeftHand;
+            handPoseData.rightHand.attachPosition = _offsetRightHand;
+            
+            handPoseData.leftHand.fingerRotations = new List<Quaternion>();
+            foreach (var transform in leftHandInfo.values)
+            {
+                handPoseData.leftHand.fingerRotations.Add(transform.rotation);
+            }
+
+            handPoseData.rightHand.fingerRotations = new List<Quaternion>();
+            foreach (var transform in rightHandInfo.values)
+            {
+                handPoseData.rightHand.fingerRotations.Add(transform.rotation);
+            }
+
+            return handPoseData;
+        }
+
+        public void SetHandPoseData(HandPoseData handPoseData)
+        {
+            _offsetLeftHand = handPoseData.leftHand.attachPosition;
+            _offsetRightHand = handPoseData.rightHand.attachPosition;
+
+            for (var i = 0; i < handPoseData.leftHand.fingerRotations.Count; i++)
+            {
+                leftHandInfo.values[i].rotation = handPoseData.leftHand.fingerRotations[i];
+            }
+            
+            for (var i = 0; i < handPoseData.rightHand.fingerRotations.Count; i++)
+            {
+                rightHandInfo.values[i].rotation = handPoseData.rightHand.fingerRotations[i];
+            }
+        }
     }
 
     [CustomEditor(typeof(HandPoseHelper))]
@@ -260,7 +330,8 @@ namespace Scripts
 
         private Transform _activeJoint;
 
-        private bool _isFoldOutHand;
+        private bool _isFoldOutHandOptions;
+        private bool _isFoldOutSaveDataOptions;
         private bool _isDisplayOneHand;
         private bool _isRootPrefab;
 
@@ -277,7 +348,7 @@ namespace Scripts
             _isRootPrefab = !PrefabUtility.GetCorrespondingObjectFromSource(_handPoseHelper.gameObject);
 
             serializedObject.Update();
-            
+
             if (_isRootPrefab)
             {
                 _leftHandPrefab = serializedObject.FindProperty("leftHandPrefab");
@@ -289,28 +360,36 @@ namespace Scripts
 
         public override void OnInspectorGUI()
         {
-            base.OnInspectorGUI();
+            _handPoseHelper = (HandPoseHelper)target;
+            
             if (_isRootPrefab)
             {
                 EditorGUILayout.PropertyField(_leftHandPrefab);
                 EditorGUILayout.PropertyField(_rightHandPrefab);
+                EditorGUILayout.Space();
+
+                _isFoldOutSaveDataOptions =
+                    EditorGUILayout.Foldout(_isFoldOutSaveDataOptions, "Setting Save Data", true);
+
+                if (_isFoldOutSaveDataOptions)
+                {
+                    SettingSaveData();
+                }
 
                 serializedObject.ApplyModifiedProperties();
                 return;
             }
 
-            
-
-            _handPoseHelper = (HandPoseHelper)target;
+            base.OnInspectorGUI();
 
             GUILayout.Space(6);
             GUILayout.BeginHorizontal();
-            _isFoldOutHand = EditorGUILayout.Foldout(_isFoldOutHand, "Options fingers hand", true);
+            _isFoldOutHandOptions = EditorGUILayout.Foldout(_isFoldOutHandOptions, "Options fingers hand", true);
             _isDisplayOneHand = GUILayout.Toggle(_isDisplayOneHand, "2 in 1",
                 GUILayout.Width(Screen.width - EditorGUIUtility.labelWidth - 25));
             GUILayout.EndHorizontal();
 
-            if (_isFoldOutHand)
+            if (_isFoldOutHandOptions)
             {
                 _handPoseHelper.RebuildJoints();
 
@@ -329,6 +408,60 @@ namespace Scripts
             serializedObject.ApplyModifiedProperties();
         }
 
+        private void SettingSaveData()
+        {
+            var saveDataSetting = serializedObject.FindProperty("saveDataSetting");
+            var names = saveDataSetting.FindPropertyRelative("names");
+            var templates = saveDataSetting.FindPropertyRelative("templates");
+            var path = saveDataSetting.FindPropertyRelative("path");
+
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.Space(8);
+            GUI.enabled = false;
+            EditorGUILayout.TextField(path.stringValue);
+            GUI.enabled = true;
+            if (GUILayout.Button("New Save Path"))
+            {
+                string newPath = EditorUtility.OpenFolderPanel("Folder save data ", "", "");
+                if (newPath.Contains("Assets"))
+                    newPath = "Assets" + newPath.Split("Assets")[1];
+                path.stringValue = newPath;
+                return;
+            }
+            GUILayout.Space(22);
+            EditorGUILayout.EndHorizontal();
+            EditorGUILayout.Space();
+            
+            for (var i = 0; i < names.arraySize; i++)
+            {
+                var name = names.GetArrayElementAtIndex(i);
+                var template = templates.GetArrayElementAtIndex(i);
+                EditorGUILayout.BeginHorizontal();
+                EditorGUILayout.Space();
+                EditorGUILayout.PropertyField(name, new GUIContent(""));
+                EditorGUILayout.PropertyField(template, new GUIContent(""));
+                if (GUILayout.Button("X"))
+                {
+                    names.DeleteArrayElementAtIndex(i);
+                    templates.DeleteArrayElementAtIndex(i);
+                    GUI.FocusControl(null);
+                    break;
+                }
+                EditorGUILayout.EndHorizontal();
+            }
+            
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.Space(8);
+            if (GUILayout.Button("Add"))
+            {
+                names.arraySize++;
+                templates.arraySize++;
+            }
+            GUILayout.Space(22);
+            EditorGUILayout.EndHorizontal();
+        }
+        
+
         private bool AddElementHand(string indent, string name, bool toggle)
         {
             GUILayout.BeginHorizontal();
@@ -338,7 +471,7 @@ namespace Scripts
 
             return result;
         }
-        
+
         private void ShowHierarchyHand(HandInfo handInfo)
         {
             for (var i = 0; i < handInfo.values.Count; i++)
