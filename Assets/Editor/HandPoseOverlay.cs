@@ -64,42 +64,46 @@ public class HandPoseOverlay : IMGUIOverlay
 
         if (!_handPoseHelper) return;
 
-        SaveData(_handPoseHelper);
+        SaveData();
 
         EditorGUI.BeginChangeCheck();
-        ChoiceColorFingers(_handPoseHelper);
+        ChoiceColorFingers();
         if (EditorGUI.EndChangeCheck())
         {
             EditorUtility.SetDirty(_handPoseHelper);
         }
     }
 
-    private void SaveData(HandPoseHelper handPoseHelper)
+    private void SaveData()
     {
-        if (!_template) CreateSO(handPoseHelper);
+        if (!_template) CreateSO(_handPoseHelper);
 
         if (Selection.activeObject?.GetType().BaseType == typeof(SaveDataTemplate))
         {
             _isSelectedSaveFile = true;
             _nameSaveData = Selection.activeObject?.name;
+            FindTemplateByName(Selection.activeObject?.GetType().ToString());
             FindPoseByName();
         }
         else if (_isSelectedSaveFile)
         {
             _isSelectedSaveFile = false;
             _nameSaveData = string.Empty;
+            _namePose = string.Empty;
         }
 
         EditorGUILayout.BeginHorizontal();
         EditorGUILayout.LabelField("Template: ", GUILayout.Width(_widthLabel));
+        GUI.enabled = !_isSelectedSaveFile;
         EditorGUI.BeginChangeCheck();
-        handPoseHelper.popupIndexTemplate = EditorGUILayout.Popup(handPoseHelper.popupIndexTemplate,
-            handPoseHelper.saveDataSetting.names.ToArray()
+        _handPoseHelper.popupIndexTemplate = EditorGUILayout.Popup(_handPoseHelper.popupIndexTemplate,
+            _handPoseHelper.saveDataSetting.names.ToArray()
             , GUILayout.Width(_widthField));
         if (EditorGUI.EndChangeCheck())
         {
-            CreateSO(handPoseHelper);
+            CreateSO(_handPoseHelper);
         }
+        GUI.enabled = true;
 
         EditorGUILayout.EndHorizontal();
 
@@ -114,19 +118,19 @@ public class HandPoseOverlay : IMGUIOverlay
         {
             EditorGUILayout.BeginHorizontal();
             EditorGUILayout.LabelField("Name pose:", GUILayout.Width(_widthLabel));
-            if (_isSelectedSaveFile)
+            var template = AssetDatabase.LoadAssetAtPath<SaveDataTemplate>(_pathAsset);
+            _namePose = EditorGUILayout.TextField(_namePose, GUILayout.Width(_widthField));
+            if (_isSelectedSaveFile && template.GetAllNames != null && template.GetAllNames.Count > 0)
             {
-                var template = AssetDatabase.LoadAssetAtPath<SaveDataTemplate>(_pathAsset);
-                _popupNamePose = EditorGUILayout.Popup(_popupNamePose, template.GetAllNames.ToArray(),
-                    GUILayout.Width(_widthField));
-                _namePose = template.GetAllNames[_popupNamePose];
+                var lastRect = GUILayoutUtility.GetLastRect();
+                var newRect = new Rect(new Vector2(lastRect.x + lastRect.size.x, lastRect.y), new Vector2(20, 20));
+                _namePose = DrawDropdown(newRect, GUIContent.none, template.GetAllNames);
             }
-            else
-                _namePose = EditorGUILayout.TextField(_namePose, GUILayout.Width(_widthField));
 
             EditorGUILayout.EndHorizontal();
         }
 
+        EditorGUILayout.Space();
         EditorGUILayout.BeginHorizontal();
         ShowButtonLoad();
 
@@ -138,10 +142,47 @@ public class HandPoseOverlay : IMGUIOverlay
         EditorGUILayout.EndHorizontal();
     }
 
+    private string DrawDropdown(Rect position, GUIContent label, List<string> allNames)
+    {
+        if (!EditorGUI.DropdownButton(position, label, FocusType.Passive))
+        {
+            return _namePose;
+        }
+
+        void handleItemClicked(object parameter)
+        {
+            _namePose = parameter.ToString();
+        }
+
+        GUI.FocusControl(null);
+        GenericMenu menu = new GenericMenu();
+        foreach (var name in allNames)
+        {
+            menu.AddItem(new GUIContent(name), false, handleItemClicked, name);
+        }
+
+        menu.DropDown(position);
+
+        return _namePose;
+    }
+
     private void CreateSO(HandPoseHelper handPoseHelper)
     {
         var type = handPoseHelper.saveDataSetting.templates[handPoseHelper.popupIndexTemplate].GetClass();
         _template = (SaveDataTemplate)ScriptableObject.CreateInstance(type);
+    }
+
+    private void FindTemplateByName(string nowName)
+    {
+        for(var i = 0;i < _handPoseHelper.saveDataSetting.templates.Count;i++)
+        {
+            if (nowName == _handPoseHelper.saveDataSetting.templates[i].name)
+            {
+                _handPoseHelper.popupIndexTemplate = i;
+                CreateSO(_handPoseHelper);
+                return;
+            }
+        }
     }
 
     private void FindPoseByName()
@@ -197,17 +238,23 @@ public class HandPoseOverlay : IMGUIOverlay
         if (GUILayout.Button("Overwrite", GUILayout.Width(_widthButton)))
         {
             var template = AssetDatabase.LoadAssetAtPath<SaveDataTemplate>(_pathAsset);
-            template.Save(_handPoseHelper.GetHandPoseData(), _isNameExist ? _namePose : _nameSaveData);
+            if (_isUseDataCollection)
+                template.Save(_handPoseHelper.GetHandPoseData(), _namePose != string.Empty ? _namePose : _nameSaveData);
+            else 
+                template.Save(_handPoseHelper.GetHandPoseData(), _isNameExist ? _namePose : _nameSaveData);
+
+            EditorUtility.SetDirty(template);
         }
     }
 
     private void ShowButtonAdd()
     {
-        GUI.enabled = _isSelectedSaveFile && _isUseDataCollection;
+        GUI.enabled = _isSelectedSaveFile && _isUseDataCollection && _namePose != string.Empty;
         if (GUILayout.Button("Add", GUILayout.Width(_widthButton)))
         {
             var template = AssetDatabase.LoadAssetAtPath<SaveDataTemplate>(_pathAsset);
             template.SaveElement(_handPoseHelper.GetHandPoseData(), _namePose);
+            EditorUtility.SetDirty(template);
         }
 
         GUI.enabled = true;
@@ -220,39 +267,40 @@ public class HandPoseOverlay : IMGUIOverlay
         {
             var template = AssetDatabase.LoadAssetAtPath<SaveDataTemplate>(_pathAsset);
             template.SaveElement(_handPoseHelper.GetHandPoseData(), _namePose);
+            EditorUtility.SetDirty(template);
         }
 
         GUI.enabled = true;
     }
 
-    private void ChoiceColorFingers(HandPoseHelper handPoseHelper)
+    private void ChoiceColorFingers()
     {
-        if (handPoseHelper.colorFingers.bones == null || handPoseHelper.colorFingers.bones.Count == 0) return;
-        if (handPoseHelper.colorFingers.joints == null || handPoseHelper.colorFingers.joints.Count == 0) return;
+        if (_handPoseHelper.colorFingers.bones == null || _handPoseHelper.colorFingers.bones.Count == 0) return;
+        if (_handPoseHelper.colorFingers.joints == null || _handPoseHelper.colorFingers.joints.Count == 0) return;
 
         _isShowColorFingers = EditorGUILayout.Foldout(_isShowColorFingers, "Color fingers", true);
 
         if (!_isShowColorFingers) return;
 
-        handPoseHelper.colorFingers.isForEachFinger =
-            GUILayout.Toggle(handPoseHelper.colorFingers.isForEachFinger, "For Each Finger");
-        if (handPoseHelper.colorFingers.isForEachFinger)
+        _handPoseHelper.colorFingers.isForEachFinger =
+            GUILayout.Toggle(_handPoseHelper.colorFingers.isForEachFinger, "For Each Finger");
+        if (_handPoseHelper.colorFingers.isForEachFinger)
         {
-            for (var i = 0; i < handPoseHelper.colorFingers.bones.Count; i++)
+            for (var i = 0; i < _handPoseHelper.colorFingers.bones.Count; i++)
             {
                 GUILayout.BeginHorizontal();
                 GUILayout.Label("Color finger " + (i + 1) + ": ");
                 GUILayout.Label(_iconBone, GUILayout.Width(17), GUILayout.Height(17));
                 GUILayout.Label("-");
-                handPoseHelper.colorFingers.bones[i] =
-                    EditorGUILayout.ColorField(new GUIContent(), handPoseHelper.colorFingers.bones[i], false, true,
+                _handPoseHelper.colorFingers.bones[i] =
+                    EditorGUILayout.ColorField(new GUIContent(), _handPoseHelper.colorFingers.bones[i], false, true,
                         false,
                         GUILayout.Width(40));
                 GUILayout.Label("|");
                 GUILayout.Label(_iconJoint, GUILayout.Width(17), GUILayout.Height(17));
                 GUILayout.Label("-");
-                handPoseHelper.colorFingers.joints[i] =
-                    EditorGUILayout.ColorField(new GUIContent(), handPoseHelper.colorFingers.joints[i], false, true,
+                _handPoseHelper.colorFingers.joints[i] =
+                    EditorGUILayout.ColorField(new GUIContent(), _handPoseHelper.colorFingers.joints[i], false, true,
                         false,
                         GUILayout.Width(40));
                 GUILayout.EndHorizontal();
@@ -264,14 +312,14 @@ public class HandPoseOverlay : IMGUIOverlay
             GUILayout.Label("Color fingers: ");
             GUILayout.Label(_iconBone, GUILayout.Width(17), GUILayout.Height(17));
             GUILayout.Label("-");
-            handPoseHelper.colorFingers.bones[0] =
-                EditorGUILayout.ColorField(new GUIContent(), handPoseHelper.colorFingers.bones[0], false, true, false,
+            _handPoseHelper.colorFingers.bones[0] =
+                EditorGUILayout.ColorField(new GUIContent(), _handPoseHelper.colorFingers.bones[0], false, true, false,
                     GUILayout.Width(40));
             GUILayout.Label("|");
             GUILayout.Label(_iconJoint, GUILayout.Width(17), GUILayout.Height(17));
             GUILayout.Label("-");
-            handPoseHelper.colorFingers.joints[0] =
-                EditorGUILayout.ColorField(new GUIContent(), handPoseHelper.colorFingers.joints[0], false, true, false,
+            _handPoseHelper.colorFingers.joints[0] =
+                EditorGUILayout.ColorField(new GUIContent(), _handPoseHelper.colorFingers.joints[0], false, true, false,
                     GUILayout.Width(40));
             GUILayout.EndHorizontal();
         }
