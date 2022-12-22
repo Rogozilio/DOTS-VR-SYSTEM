@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using Components;
 using UnityEditor;
@@ -12,6 +13,30 @@ namespace Scripts
         [HideInInspector] [SerializeField] public List<Transform> joints;
         [HideInInspector] public HandPoseHelper poseHelper;
         public List<List<Transform>> fingers;
+
+        public IEnumerator StartAutoHand()
+        {
+            var isEnd = false;
+            while (!isEnd)
+            {
+                poseHelper.UndoRecordHands("Auto Pose");
+                isEnd = true;
+                foreach (var finger in fingers)
+                {
+                    Transform activeFinger = null;
+                    for (var i = finger.Count - 1; i >= 0; i--)
+                    {
+                        if (!finger[i].TryGetComponent(out Collider collider) || !collider.enabled) break;
+                        activeFinger = finger[i];
+                        isEnd = false;
+                    }
+                    
+                    activeFinger?.Rotate(0, 1, 0);
+                }
+            
+                yield return new WaitForSeconds(1/30f); 
+            }
+        }
     }
 
     [CustomEditor(typeof(DrawGizmosHand))]

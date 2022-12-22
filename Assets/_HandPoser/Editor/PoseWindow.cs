@@ -12,7 +12,7 @@ public class PoseWindow : EditorWindow
     private GameObject poseHelper = null;
 
     // Functionality
-    private HandManager handManager = null;
+    //private HandManager handManager = null;
     private SelectionHandler selectionHandler = null;
 
     private void OnEnable()
@@ -44,7 +44,7 @@ public class PoseWindow : EditorWindow
 
             // Get functionality
             selectionHandler = poseHelper.GetComponent<SelectionHandler>();
-            handManager = poseHelper.GetComponent<HandManager>();
+            //handManager = poseHelper.GetComponent<HandManager>();
 
             // Set initial selection setup
             UpdateSelection();
@@ -96,67 +96,67 @@ public class PoseWindow : EditorWindow
                 ClearPose();
         }
 
-        using (new EditorGUI.DisabledScope(!handManager.HandsExist))
-        {
-            PreviewHand leftHand = handManager.LeftHand;
-            PreviewHand rightHand = handManager.RightHand;
-            float objectWidth = EditorGUIUtility.currentViewWidth * 0.5f;
-
-            // Hand labels
-            using (new GUILayout.HorizontalScope())
-            {
-                GUILayout.Label("Left Hand", labelStyle, GUILayout.Width(objectWidth));
-                GUILayout.Label("Right Hand", labelStyle, GUILayout.Width(objectWidth));
-            }
-
-            // Toggle buttons
-            using (new GUILayout.HorizontalScope())
-            {
-                if (GUILayout.Button("Toggle", GUILayout.Width(objectWidth)))
-                    ToggleHand(leftHand);
-
-                if (GUILayout.Button("Toggle", GUILayout.Width(objectWidth)))
-                    ToggleHand(rightHand);
-            }
-
-            // Buttons that require a pose
-            using (new EditorGUI.DisabledScope(!activePose))
-            {
-                using (new GUILayout.HorizontalScope())
-                {
-                    if (GUILayout.Button("Mirror L > R", GUILayout.Width(objectWidth)))
-                        MirrorPose(leftHand, rightHand);
-
-                    if (GUILayout.Button("Mirror R > L", GUILayout.Width(objectWidth)))
-                        MirrorPose(rightHand, leftHand);
-                }
-
-                using (new GUILayout.HorizontalScope())
-                {
-                    if (GUILayout.Button("Undo Changes", GUILayout.Width(objectWidth)))
-                        UndoChanges(leftHand);
-
-                    if (GUILayout.Button("Undo Changes", GUILayout.Width(objectWidth)))
-                        UndoChanges(rightHand);
-                }
-
-                using (new GUILayout.HorizontalScope())
-                {
-                    if (GUILayout.Button("Reset", GUILayout.Width(objectWidth)))
-                        ResetPose(leftHand);
-
-                    if (GUILayout.Button("Reset", GUILayout.Width(objectWidth)))
-                        ResetPose(rightHand);
-                }
-            }
-        }
+        // using (new EditorGUI.DisabledScope(!handManager.HandsExist))
+        // {
+        //     PreviewHand leftHand = handManager.LeftHand;
+        //     PreviewHand rightHand = handManager.RightHand;
+        //     float objectWidth = EditorGUIUtility.currentViewWidth * 0.5f;
+        //
+        //     // Hand labels
+        //     using (new GUILayout.HorizontalScope())
+        //     {
+        //         GUILayout.Label("Left Hand", labelStyle, GUILayout.Width(objectWidth));
+        //         GUILayout.Label("Right Hand", labelStyle, GUILayout.Width(objectWidth));
+        //     }
+        //
+        //     // Toggle buttons
+        //     using (new GUILayout.HorizontalScope())
+        //     {
+        //         if (GUILayout.Button("Toggle", GUILayout.Width(objectWidth)))
+        //             ToggleHand(leftHand);
+        //
+        //         if (GUILayout.Button("Toggle", GUILayout.Width(objectWidth)))
+        //             ToggleHand(rightHand);
+        //     }
+        //
+        //     // Buttons that require a pose
+        //     using (new EditorGUI.DisabledScope(!activePose))
+        //     {
+        //         using (new GUILayout.HorizontalScope())
+        //         {
+        //             if (GUILayout.Button("Mirror L > R", GUILayout.Width(objectWidth)))
+        //                 MirrorPose(leftHand, rightHand);
+        //
+        //             if (GUILayout.Button("Mirror R > L", GUILayout.Width(objectWidth)))
+        //                 MirrorPose(rightHand, leftHand);
+        //         }
+        //
+        //         using (new GUILayout.HorizontalScope())
+        //         {
+        //             if (GUILayout.Button("Undo Changes", GUILayout.Width(objectWidth)))
+        //                 UndoChanges(leftHand);
+        //
+        //             if (GUILayout.Button("Undo Changes", GUILayout.Width(objectWidth)))
+        //                 UndoChanges(rightHand);
+        //         }
+        //
+        //         using (new GUILayout.HorizontalScope())
+        //         {
+        //             if (GUILayout.Button("Reset", GUILayout.Width(objectWidth)))
+        //                 ResetPose(leftHand);
+        //
+        //             if (GUILayout.Button("Reset", GUILayout.Width(objectWidth)))
+        //                 ResetPose(rightHand);
+        //         }
+        //     }
+        // }
 
         using (new EditorGUI.DisabledScope(!activePose))
         {
             GUILayout.Label("Remember to Save!", labelStyle);
 
-            if (GUILayout.Button("Save Pose"))
-                handManager.SavePose(activePose);
+            if (GUILayout.Button("Save Pose")) {}
+                //handManager.SavePose(activePose);
         }
     }
 
@@ -169,7 +169,7 @@ public class PoseWindow : EditorWindow
         GameObject targetObject = selectionHandler.SetObjectPose(activePose);
 
         // Update the hands
-        handManager.UpdateHands(activePose, targetObject.transform);
+        //handManager.UpdateHands(activePose, targetObject.transform);
     }
 
     Pose CreatePoseAsset()
@@ -203,8 +203,8 @@ public class PoseWindow : EditorWindow
         activePose = selectionHandler.TryGetPose(targetObject);
 
         // If we have a pose, update the hands
-        if(activePose)
-            handManager.UpdateHands(activePose, targetObject.transform);
+        if(activePose) {}
+            //handManager.UpdateHands(activePose, targetObject.transform);
     }
 
     private void ClearPose()

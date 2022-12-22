@@ -1,5 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
+using Enums;
+using Unity.EditorCoroutines.Editor;
 using Unity.Entities.UniversalDelegates;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -15,7 +18,7 @@ namespace Scripts
         public Quaternion attachRotation;
         public List<Quaternion> fingerRotations;
     }
-    
+
     [Serializable]
     public struct HandPoseData
     {
@@ -23,8 +26,8 @@ namespace Scripts
         public HandPose leftHand;
         public HandPose rightHand;
     }
-    
-    
+
+
     [Serializable]
     public struct HandInfo
     {
@@ -49,9 +52,9 @@ namespace Scripts
 
         public void Clear()
         {
-            indents = new List<string>();
-            values = new List<Transform>();
-            toggles = new List<bool>();
+            indents.Clear();
+            values.Clear();
+            toggles.Clear();
         }
     }
 
@@ -82,6 +85,8 @@ namespace Scripts
 
         [HideInInspector] [SerializeField] private GameObject _leftHand;
         [HideInInspector] [SerializeField] private GameObject _rightHand;
+
+        private HandPoseData _defaultHandPoseData;
 
         [HideInInspector] public HandInfo leftHandInfo;
         [HideInInspector] public HandInfo rightHandInfo;
@@ -135,21 +140,26 @@ namespace Scripts
                 _leftHand = Instantiate(leftHandPrefab, Vector3.zero, Quaternion.identity, transform);
                 _rightHand = Instantiate(rightHandPrefab, Vector3.zero, Quaternion.identity, transform);
 
+                _leftHand.name = "Left Hand";
+                _rightHand.name = "Right Hand";
+
                 _leftHand.AddComponent<DrawGizmosHand>().joints = leftHandJoints;
                 _rightHand.AddComponent<DrawGizmosHand>().joints = rightHandJoints;
 
-                if (leftHandInfo.values.Count == 0)
+                if (leftHandInfo.indents.Count != leftHandInfo.values.Count &&
+                    leftHandInfo.values.Count != leftHandInfo.toggles.Count)
                 {
+                    leftHandInfo.Clear();
+                    rightHandInfo.Clear();
                     SetHandInfo(leftHandInfo, _leftHand.transform);
                     SetHandInfo(rightHandInfo, _rightHand.transform);
                 }
-                else
-                {
-                    leftHandInfo.values.Clear();
-                    rightHandInfo.values.Clear();
-                    RefreshTransformJoints(leftHandInfo, _leftHand.transform);
-                    RefreshTransformJoints(rightHandInfo, _rightHand.transform);
-                }
+
+                leftHandInfo.values.Clear();
+                rightHandInfo.values.Clear();
+                RefreshTransformJoints(leftHandInfo, _leftHand.transform);
+                RefreshTransformJoints(rightHandInfo, _rightHand.transform);
+                _defaultHandPoseData = GetHandPoseData();
             }
         }
 
@@ -166,32 +176,32 @@ namespace Scripts
             if (isSelectParentHand) selectObj = SelectParentHand(selectObj);
 
             IsVisibleHands = true;
-            SetMainSelectObject = selectObj;
-            SetOffsetHands(selectObj);
-            SetPositionHands(selectObj);
-        }
-
-        private void SetOffsetHands(GameObject selectObj)
-        {
-            if (selectObj == _leftHand)
-                _offsetLeftHand = _leftHand.transform.position - _mainSelectObject.transform.position;
-            else if (selectObj == _rightHand)
-                _offsetRightHand = _rightHand.transform.position - _mainSelectObject.transform.position;
-        }
-
-        private void SetPositionHands(GameObject selectObj)
-        {
-            var selectPosition = selectObj.transform.position;
-
-            if (selectObj == _leftHand)
-                _leftHand.transform.position = selectPosition;
-            else if (selectObj == _rightHand)
-                _rightHand.transform.position = selectPosition;
-            else
+            if (_mainSelectObject != selectObj)
             {
-                _leftHand.transform.position = selectPosition + _offsetLeftHand;
-                _rightHand.transform.position = selectPosition + _offsetRightHand;
+                SetMainSelectObject = selectObj;
+                transform.position = _mainSelectObject.transform.position;
+                SetOffsetHands();
             }
+        }
+        
+        private void OnTriggerEnter(Collider other)
+        {
+            Debug.Log(other.name);
+            //other.enabled = false;
+        }
+
+        private void SetOffsetHands()
+        {
+            _offsetLeftHand = _leftHand.transform.position - _mainSelectObject.transform.position;
+            _offsetRightHand = _rightHand.transform.position - _mainSelectObject.transform.position;
+        }
+
+        private void SetPositionHands()
+        {
+            var selectPosition = _mainSelectObject.transform.position;
+
+            _leftHand.transform.position = selectPosition + _offsetLeftHand;
+            _rightHand.transform.position = selectPosition + _offsetRightHand;
         }
 
         private GameObject SelectParentHand(GameObject selectObject)
@@ -252,6 +262,24 @@ namespace Scripts
             return false;
         }
 
+        public void UndoRecordHands(string name, HandType handType = HandType.All)
+        {
+            var objects = new List<Object>();
+            if (handType != HandType.Right && handType != HandType.None)
+            {
+                objects.Add(_leftHand.transform);
+                objects.AddRange(leftHandInfo.values);
+            }
+
+            if (handType != HandType.Left && handType != HandType.None)
+            {
+                objects.Add(_rightHand.transform);
+                objects.AddRange(rightHandInfo.values);
+            }
+
+            Undo.RecordObjects(objects.ToArray(), name);
+        }
+
         public void RefreshTransformJoints(HandInfo handInfo, Transform newValue)
         {
             handInfo.values.Add(newValue);
@@ -287,7 +315,7 @@ namespace Scripts
 
             handPoseData.leftHand.attachPosition = _offsetLeftHand;
             handPoseData.rightHand.attachPosition = _offsetRightHand;
-            
+
             handPoseData.leftHand.fingerRotations = new List<Quaternion>();
             foreach (var transform in leftHandInfo.values)
             {
@@ -303,20 +331,173 @@ namespace Scripts
             return handPoseData;
         }
 
-        public void SetHandPoseData(HandPoseData handPoseData)
+        public void SetHandPoseData(HandPoseData handPoseData, HandType handType = HandType.All)
         {
-            _offsetLeftHand = handPoseData.leftHand.attachPosition;
-            _offsetRightHand = handPoseData.rightHand.attachPosition;
-
-            for (var i = 0; i < handPoseData.leftHand.fingerRotations.Count; i++)
+            if (handPoseData.leftHand.fingerRotations.Count != leftHandInfo.values.Count ||
+                handPoseData.rightHand.fingerRotations.Count != rightHandInfo.values.Count)
             {
-                leftHandInfo.values[i].rotation = handPoseData.leftHand.fingerRotations[i];
+                Debug.LogError("Load failed. Save data do not match choice hands.");
+                return;
+            }
+            SetPositionHands();
+
+            if (handType is HandType.All or HandType.Left)
+            {
+                _offsetLeftHand = handPoseData.leftHand.attachPosition;
+                for (var i = 0; i < handPoseData.leftHand.fingerRotations.Count; i++)
+                {
+                    leftHandInfo.values[i].rotation = handPoseData.leftHand.fingerRotations[i];
+                } 
+            }
+
+            if (handType is HandType.All or HandType.Right)
+            {
+                _offsetRightHand = handPoseData.rightHand.attachPosition;
+                for (var i = 0; i < handPoseData.rightHand.fingerRotations.Count; i++)
+                {
+                    rightHandInfo.values[i].rotation = handPoseData.rightHand.fingerRotations[i];
+                }
+            }
+        }
+
+        public void ClearPose(HandType handType)
+        {
+            if(handType == HandType.None) return;
+            
+            UndoRecordHands("Clear hands");
+            _leftHand.transform.localPosition = Vector3.zero;
+            _rightHand.transform.localPosition = Vector3.zero;
+            SetHandPoseData(_defaultHandPoseData, handType);
+        }
+
+        public void MirrorPose(bool isLeftHand)
+        {
+            UndoRecordHands("Mirror hand");
+
+            if (isLeftHand)
+            {
+                var pos = _leftHand.transform.localPosition;
+                var rot = _leftHand.transform.localRotation;
+                pos.x *= -1f;
+                rot.z *= -1f;
+                rot.y *= -1f;
+                _rightHand.transform.localPosition = pos;
+                _rightHand.transform.localRotation = rot;
+            }
+            else
+            {
+                var pos = _rightHand.transform.localPosition;
+                var rot = _rightHand.transform.localRotation;
+                pos.x *= -1f;
+                rot.z *= -1f;
+                rot.y *= -1f;
+                _leftHand.transform.localPosition = pos;
+                _leftHand.transform.localRotation = rot;
+            }
+
+            var originHandInfo = (isLeftHand) ? leftHandInfo : rightHandInfo;
+            var newHandInfo = (isLeftHand) ? rightHandInfo : leftHandInfo;
+
+            for (var i = 0; i < newHandInfo.values.Count; i++)
+            {
+                if (!newHandInfo.toggles[i]) continue;
+
+                Quaternion mirrorRotation = originHandInfo.values[i].localRotation;
+                mirrorRotation.x *= -1.0f;
+                mirrorRotation.z *= -1.0f;
+
+                newHandInfo.values[i].localRotation = mirrorRotation;
+            }
+        }
+
+        public void AutoPose(HandType handHand)
+        {
+            InitMainSelectAutoPose();
+
+            if (handHand == HandType.All || handHand == HandType.Left)
+            {
+                InitHandAutoPose(true);
+                EditorCoroutineUtility.StartCoroutine(_leftHand.GetComponent<DrawGizmosHand>().StartAutoHand(), this);
+            }
+
+            if (handHand == HandType.All || handHand == HandType.Right)
+            {
+                InitHandAutoPose(false);
+                EditorCoroutineUtility.StartCoroutine(_rightHand.GetComponent<DrawGizmosHand>().StartAutoHand(), this);
+            }
+        }
+
+        private void InitMainSelectAutoPose()
+        {
+            if (!_mainSelectObject.TryGetComponent(out Collider collider))
+            {
+                if(!_mainSelectObject.TryGetComponent(out MeshFilter selectMeshFilter))
+                {
+                    Debug.LogError(
+                        "Add to selected object " + _mainSelectObject.name + "mesh filter or collide.");
+                    return;
+                }
+
+                var meshCollider = _mainSelectObject.AddComponent<MeshCollider>();
+                meshCollider.convex = true;
+                collider = meshCollider;
             }
             
-            for (var i = 0; i < handPoseData.rightHand.fingerRotations.Count; i++)
+            collider.isTrigger = true;
+
+            if (!_mainSelectObject.TryGetComponent(out Rigidbody rigidbody))
             {
-                rightHandInfo.values[i].rotation = handPoseData.rightHand.fingerRotations[i];
+                rigidbody = _mainSelectObject.AddComponent<Rigidbody>();
             }
+
+            rigidbody.isKinematic = true;
+            rigidbody.useGravity = false;
+            
+            if (!_mainSelectObject.TryGetComponent(out TriggerForFinger script))
+            {
+                _mainSelectObject.AddComponent<TriggerForFinger>();
+            }
+        }
+
+        private void InitHandAutoPose(bool isLeftHand)
+        {
+            var hand = (isLeftHand) ? leftHandInfo : rightHandInfo;
+            
+            for (var i = 0; i < hand.values.Count - 1; i++)
+            {
+                var joint1 = (hand.toggles[i]) 
+                    ? hand.values[i] 
+                    : null;
+                var joint2 = (hand.toggles[i + 1])
+                    ? hand.values[i + 1]
+                    : null;
+
+                if (i == hand.values.Count - 2)
+                {
+                    CreateBoneCollider(joint2, 0.025f);
+                }
+
+                if (joint1 && joint2 && joint2.IsChildOf(joint1))
+                {
+                    CreateBoneCollider(joint1, Vector3.Distance(joint2.position, joint1.position));
+                }
+                else if (joint1?.childCount == 0 || joint2?.childCount == 0)
+                {
+                    CreateBoneCollider(joint1, 0.025f);
+                }
+            }
+        }
+        private void CreateBoneCollider(Transform joint, float height)
+        {
+            if (!joint.gameObject.TryGetComponent(out CapsuleCollider collider))
+                collider = joint.gameObject.AddComponent<CapsuleCollider>();
+            collider.enabled = true;
+            collider.radius = 0.01f;
+            collider.direction = 0;
+            collider.height = height;
+            var newVector = Vector3.zero;
+            newVector[collider.direction] = collider.height / 2f;
+            collider.center = -newVector;
         }
     }
 
@@ -361,7 +542,7 @@ namespace Scripts
         public override void OnInspectorGUI()
         {
             _handPoseHelper = (HandPoseHelper)target;
-            
+
             if (_isRootPrefab)
             {
                 EditorGUILayout.PropertyField(_leftHandPrefab);
@@ -428,10 +609,11 @@ namespace Scripts
                 path.stringValue = newPath;
                 return;
             }
+
             GUILayout.Space(22);
             EditorGUILayout.EndHorizontal();
             EditorGUILayout.Space();
-            
+
             for (var i = 0; i < names.arraySize; i++)
             {
                 var name = names.GetArrayElementAtIndex(i);
@@ -447,9 +629,10 @@ namespace Scripts
                     GUI.FocusControl(null);
                     break;
                 }
+
                 EditorGUILayout.EndHorizontal();
             }
-            
+
             EditorGUILayout.BeginHorizontal();
             GUILayout.Space(8);
             if (GUILayout.Button("Add"))
@@ -457,10 +640,11 @@ namespace Scripts
                 names.arraySize++;
                 templates.arraySize++;
             }
+
             GUILayout.Space(22);
             EditorGUILayout.EndHorizontal();
         }
-        
+
 
         private bool AddElementHand(string indent, string name, bool toggle)
         {

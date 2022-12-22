@@ -5,7 +5,7 @@ using UnityEditor;
 #endif
 
 [ExecuteInEditMode]
-public class HandManager : MonoBehaviour
+public class dddddddddddddddddHandManager : MonoBehaviour
 {
     // The hand prefabs we're using
     [SerializeField] private bool hideHands = true;

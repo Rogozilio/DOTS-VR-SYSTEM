@@ -4,6 +4,7 @@
     {
         None,
         Left,
-        Right
+        Right,
+        All
     }
 }
