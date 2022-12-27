@@ -47,6 +47,7 @@ MonoBehaviour:
   isSelectParentHand: 1
   isUseFingertip: 1
   speedRotate: {x: 0, y: 0, z: 0}
+  edgeRotate: 0
   leftHandPrefab: {fileID: 114642, guid: df4b88499f4990141938c50917087abd, type: 3}
   rightHandPrefab: {fileID: 132558, guid: 2ef55f31e68ebfd4ea9afecb17521ca9, type: 3}
   leftHandJoints:

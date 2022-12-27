@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using HandPoseHelper.Scripts.Enums;
 using Unity.EditorCoroutines.Editor;
+using Unity.Entities.UI;
 using UnityEditor;
 using UnityEngine;
 using Object = UnityEngine.Object;
@@ -76,7 +77,7 @@ namespace Scripts
         [SerializeField] public bool isSelectParentHand = true;
         [HideInInspector] [SerializeField] public bool isUseFingertip;
         [HideInInspector] [SerializeField] public Vector3 speedRotate;
-        [HideInInspector] [SerializeField] public float edgeRotate;
+        [HideInInspector] [SerializeField] public float maxRotate;
         [Space]
         [HideInInspector] public GameObject leftHandPrefab;
         [HideInInspector] public GameObject rightHandPrefab;
@@ -200,12 +201,6 @@ namespace Scripts
             }
         }
 
-        private void OnTriggerEnter(Collider other)
-        {
-            Debug.Log(other.name);
-            //other.enabled = false;
-        }
-
         private void SetOffsetHands()
         {
             _offsetLeftHand = _leftHand.transform.position - _mainSelectObject.transform.position;
@@ -216,8 +211,9 @@ namespace Scripts
         {
             var selectPosition = _mainSelectObject.transform.position;
 
-            _leftHand.transform.position = selectPosition + _offsetLeftHand;
-            _rightHand.transform.position = selectPosition + _offsetRightHand;
+            transform.position = _mainSelectObject.transform.position;
+            _leftHand.transform.position = transform.position + _offsetLeftHand;
+            _rightHand.transform.position = transform.position + _offsetRightHand;
         }
 
         private GameObject SelectParentHand(GameObject selectObject)
@@ -349,15 +345,6 @@ namespace Scripts
 
         public void SetHandPoseData(HandPoseData handPoseData, HandType handType = HandType.All)
         {
-            if (handPoseData.leftHand.fingerRotations.Count != leftHandInfo.values.Count ||
-                handPoseData.rightHand.fingerRotations.Count != rightHandInfo.values.Count)
-            {
-                Debug.LogError("Load failed. Save data do not match choice hands.");
-                return;
-            }
-
-            SetPositionHands();
-
             if (handType is HandType.All or HandType.Left)
             {
                 _offsetLeftHand = handPoseData.leftHand.attachPosition;
@@ -375,6 +362,8 @@ namespace Scripts
                     rightHandInfo.values[i].rotation = handPoseData.rightHand.fingerRotations[i];
                 }
             }
+            
+            SetPositionHands();
         }
 
         public void ClearPose(HandType handType)
@@ -531,6 +520,9 @@ namespace Scripts
 
         private SerializedProperty _leftHandPrefab;
         private SerializedProperty _rightHandPrefab;
+        private SerializedProperty _isUseFingertip;
+        private SerializedProperty _speedRotate;
+        private SerializedProperty _maxRotate;
 
         private Transform _activeJoint;
 
@@ -543,6 +535,10 @@ namespace Scripts
         private void OnEnable()
         {
             _handPoseHelper = (HandPoseHelper)target;
+            
+            _isUseFingertip = serializedObject.FindProperty("isUseFingertip");
+            _speedRotate = serializedObject.FindProperty("speedRotate");
+            _maxRotate = serializedObject.FindProperty("maxRotate");
 
             _isRootPrefab = !PrefabUtility.GetCorrespondingObjectFromSource(_handPoseHelper.gameObject);
 
@@ -593,7 +589,8 @@ namespace Scripts
             _isDisplayOneHand = GUILayout.Toggle(_isDisplayOneHand, " 2 in 1",
                 GUILayout.Width(Screen.width - EditorGUIUtility.labelWidth - 25));
             GUILayout.EndHorizontal();
-
+            _isFoldOutHandOptions = _isDisplayOneHand || _isFoldOutHandOptions;
+            
             if (_isFoldOutHandOptions)
             {
                 _handPoseHelper.RebuildJoints();
@@ -605,7 +602,6 @@ namespace Scripts
                 else
                 {
                     ShowHierarchyHand(_handPoseHelper.leftHandInfo);
-                    GUILayout.Space(10);
                     ShowHierarchyHand(_handPoseHelper.rightHandInfo);
                 }
             }
@@ -615,9 +611,9 @@ namespace Scripts
 
             if (_isFoldOutAutoHandOption)
             {
-                _handPoseHelper.isUseFingertip = EditorGUILayout.Toggle("Is Use Fingertip", _handPoseHelper.isUseFingertip);
-                _handPoseHelper.speedRotate = EditorGUILayout.Vector3Field("Speed Rotate", _handPoseHelper.speedRotate);
-                _handPoseHelper.edgeRotate = EditorGUILayout.Slider("Edge Rotate", _handPoseHelper.edgeRotate, 30, 100);
+                EditorGUILayout.PropertyField(_isUseFingertip);
+                EditorGUILayout.PropertyField(_speedRotate);
+                _maxRotate.floatValue = EditorGUILayout.Slider("Edge Rotate", _maxRotate.floatValue, 30, 100);
             }
 
             serializedObject.ApplyModifiedProperties();
@@ -707,12 +703,13 @@ namespace Scripts
             if (_handPoseHelper.leftHandInfo.values.Count != _handPoseHelper.rightHandInfo.values.Count)
             {
                 Debug.LogError("Left and Right hand have a different number of elements");
+                _isDisplayOneHand = false;
                 return;
             }
 
             for (var i = 0; i < _handPoseHelper.leftHandInfo.values.Count; i++)
             {
-                var indent = _handPoseHelper.leftHandInfo.indents[i];
+                var indent = _handPoseHelper.leftHandInfo.indents[i].Remove(0, 1);
                 var toggle = _handPoseHelper.leftHandInfo.toggles[i] && _handPoseHelper.rightHandInfo.toggles[i];
                 var name = _handPoseHelper.leftHandInfo.values[i].name == _handPoseHelper.rightHandInfo.values[i].name
                     ? _handPoseHelper.leftHandInfo.values[i].name

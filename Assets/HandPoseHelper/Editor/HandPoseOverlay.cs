@@ -276,7 +276,16 @@ public class HandPoseOverlay : IMGUIOverlay
         {
             var template = AssetDatabase.LoadAssetAtPath<SaveDataTemplate>(_pathAsset);
             template.FindByName(_namePose, out HandPoseData handPoseData);
-            _handPoseHelper.SetHandPoseData(_isNameExist ? handPoseData : template.Load());
+            var handPose = _isNameExist ? handPoseData : template.Load();
+
+            if (handPose.leftHand.fingerRotations.Count != _handPoseHelper.leftHandInfo.values.Count ||
+                handPose.rightHand.fingerRotations.Count != _handPoseHelper.rightHandInfo.values.Count)
+            {
+                Debug.LogError("Load failed. Save data do not match choice hands.");
+                return;
+            }
+            
+            _handPoseHelper.SetHandPoseData(handPose);
         }
 
         GUI.enabled = true;

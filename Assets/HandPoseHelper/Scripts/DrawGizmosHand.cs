@@ -46,7 +46,7 @@ namespace Scripts
 
                     if (!activeFinger) continue;
 
-                    if (edge[index] < poseHelper.edgeRotate)
+                    if (edge[index] < poseHelper.maxRotate)
                         activeFinger.Rotate(poseHelper.speedRotate);
                     else
                         activeFinger.GetComponent<Collider>().enabled = false;
