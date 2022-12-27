@@ -75,6 +75,7 @@ namespace Scripts
     public class HandPoseHelper : MonoBehaviour
     {
         [SerializeField] public bool isSelectParentHand = true;
+        [HideInInspector] [SerializeField] public SaveDataTemplate defaultSaveData;
         [HideInInspector] [SerializeField] public bool isUseFingertip;
         [HideInInspector] [SerializeField] public Vector3 speedRotate;
         [HideInInspector] [SerializeField] public float maxRotate;
@@ -87,7 +88,7 @@ namespace Scripts
         [HideInInspector] [SerializeField] private GameObject _leftHand;
         [HideInInspector] [SerializeField] private GameObject _rightHand;
 
-        private HandPoseData _defaultHandPoseData;
+        private HandPoseData _clearHandPoseData;
 
         [HideInInspector] public HandInfo leftHandInfo;
         [HideInInspector] public HandInfo rightHandInfo;
@@ -95,6 +96,7 @@ namespace Scripts
         [HideInInspector] public ColorFingers colorFingers;
 
         [HideInInspector] public int popupIndexTemplate;
+        [HideInInspector] public int popupIndexDefaultSaveData;
         [HideInInspector] public SaveDataSetting saveDataSetting;
 
         private Vector3 _offsetLeftHand;
@@ -139,6 +141,11 @@ namespace Scripts
             }
         }
 
+        public bool isDefaultPoseExist 
+            => defaultSaveData &&
+               (!defaultSaveData.GetIsUseDataCollection ||
+                (defaultSaveData.GetIsUseDataCollection && defaultSaveData.GetAllNames.Count > 0));
+
         public void OnEnable()
         {
             if (!leftHandPrefab || !rightHandPrefab)
@@ -176,7 +183,8 @@ namespace Scripts
                 rightHandInfo.values.Clear();
                 RefreshTransformJoints(leftHandInfo, _leftHand.transform);
                 RefreshTransformJoints(rightHandInfo, _rightHand.transform);
-                _defaultHandPoseData = GetHandPoseData();
+                _clearHandPoseData = GetHandPoseData();
+                ClearOrDefaultPose(HandType.All);
             }
         }
 
@@ -196,22 +204,19 @@ namespace Scripts
             if (_mainSelectObject != selectObj)
             {
                 SetMainSelectObject = selectObj;
-                transform.position = _mainSelectObject.transform.position;
+                transform.position = (_mainSelectObject) ? _mainSelectObject.transform.position : transform.position;
                 SetOffsetHands();
             }
         }
 
         private void SetOffsetHands()
         {
-            _offsetLeftHand = _leftHand.transform.position - _mainSelectObject.transform.position;
-            _offsetRightHand = _rightHand.transform.position - _mainSelectObject.transform.position;
+            _offsetLeftHand = _leftHand.transform.position - transform.position;
+            _offsetRightHand = _rightHand.transform.position - transform.position;
         }
 
         private void SetPositionHands()
         {
-            var selectPosition = _mainSelectObject.transform.position;
-
-            transform.position = _mainSelectObject.transform.position;
             _leftHand.transform.position = transform.position + _offsetLeftHand;
             _rightHand.transform.position = transform.position + _offsetRightHand;
         }
@@ -362,18 +367,37 @@ namespace Scripts
                     rightHandInfo.values[i].rotation = handPoseData.rightHand.fingerRotations[i];
                 }
             }
-            
+
             SetPositionHands();
         }
 
-        public void ClearPose(HandType handType)
+        public void ClearOrDefaultPose(HandType handType)
         {
             if (handType == HandType.None) return;
+            
+            UndoRecordHands("Clear or default hands");
 
-            UndoRecordHands("Clear hands");
-            _leftHand.transform.localPosition = Vector3.zero;
-            _rightHand.transform.localPosition = Vector3.zero;
-            SetHandPoseData(_defaultHandPoseData, handType);
+            if (isDefaultPoseExist)
+            {
+                if (defaultSaveData.GetAllNames?.Count > 0)
+                {
+                    var name = defaultSaveData.GetAllNames?[popupIndexDefaultSaveData];
+                    defaultSaveData.FindByName(name, out var handPoseData);
+                    _leftHand.transform.localPosition = handPoseData.leftHand.attachPosition;
+                    _rightHand.transform.localPosition = handPoseData.rightHand.attachPosition; 
+                    SetHandPoseData(handPoseData, handType);
+                    return;
+                }
+                _leftHand.transform.localPosition = defaultSaveData.Load().leftHand.attachPosition;
+                _rightHand.transform.localPosition = defaultSaveData.Load().rightHand.attachPosition; 
+                SetHandPoseData(defaultSaveData.Load(), handType);
+            }
+            else
+            {
+                _leftHand.transform.localPosition = Vector3.zero;
+                _rightHand.transform.localPosition = Vector3.zero;
+                SetHandPoseData(_clearHandPoseData, handType);
+            }
         }
 
         public void MirrorPose(bool isLeftHand)
@@ -470,7 +494,7 @@ namespace Scripts
                     CreateBoneCollider(finger[i], finger[i + 1]);
                 }
 
-                if(isUseFingertip) CreateBoneCollider(finger[^1], 0.025f);
+                if (isUseFingertip) CreateBoneCollider(finger[^1], 0.025f);
             }
         }
 
@@ -500,7 +524,7 @@ namespace Scripts
             var dotValue = new Vector3(Mathf.RoundToInt(Vector3.Dot(joint1.right, offsetVector)),
                 Mathf.RoundToInt(Vector3.Dot(joint1.up, offsetVector)),
                 Mathf.RoundToInt(Vector3.Dot(joint1.forward, offsetVector)));
-            
+
             axis = (dotValue[0] != 0) ? 0 : axis;
             axis = (dotValue[1] != 0) ? 1 : axis;
             axis = (dotValue[2] != 0) ? 2 : axis;
@@ -520,6 +544,8 @@ namespace Scripts
 
         private SerializedProperty _leftHandPrefab;
         private SerializedProperty _rightHandPrefab;
+        private SerializedProperty _defaultSaveData;
+        private SerializedProperty _popupIndexDefaultSaveData;
         private SerializedProperty _isUseFingertip;
         private SerializedProperty _speedRotate;
         private SerializedProperty _maxRotate;
@@ -535,7 +561,9 @@ namespace Scripts
         private void OnEnable()
         {
             _handPoseHelper = (HandPoseHelper)target;
-            
+
+            _defaultSaveData = serializedObject.FindProperty("defaultSaveData");
+            _popupIndexDefaultSaveData = serializedObject.FindProperty("popupIndexDefaultSaveData");
             _isUseFingertip = serializedObject.FindProperty("isUseFingertip");
             _speedRotate = serializedObject.FindProperty("speedRotate");
             _maxRotate = serializedObject.FindProperty("maxRotate");
@@ -583,6 +611,17 @@ namespace Scripts
 
             base.OnInspectorGUI();
 
+            GUILayout.BeginHorizontal();
+            EditorGUI.BeginChangeCheck();
+            EditorGUILayout.PropertyField(_defaultSaveData);
+            if(EditorGUI.EndChangeCheck())
+            {
+                _popupIndexDefaultSaveData.intValue = 0;
+            }
+            if (((SaveDataTemplate)_defaultSaveData.objectReferenceValue)?.GetAllNames?.Count > 0)
+                _popupIndexDefaultSaveData.intValue = EditorGUILayout.Popup(_popupIndexDefaultSaveData.intValue,
+                    ((SaveDataTemplate)_defaultSaveData.objectReferenceValue).GetAllNames.ToArray(), GUILayout.Width(100f));
+            GUILayout.EndHorizontal();
             GUILayout.Space(6);
             GUILayout.BeginHorizontal();
             _isFoldOutHandOptions = EditorGUILayout.Foldout(_isFoldOutHandOptions, "Options fingers hand", true);
@@ -590,7 +629,7 @@ namespace Scripts
                 GUILayout.Width(Screen.width - EditorGUIUtility.labelWidth - 25));
             GUILayout.EndHorizontal();
             _isFoldOutHandOptions = _isDisplayOneHand || _isFoldOutHandOptions;
-            
+
             if (_isFoldOutHandOptions)
             {
                 _handPoseHelper.RebuildJoints();
@@ -605,7 +644,7 @@ namespace Scripts
                     ShowHierarchyHand(_handPoseHelper.rightHandInfo);
                 }
             }
-            
+
             EditorGUILayout.Space();
             _isFoldOutAutoHandOption = EditorGUILayout.Foldout(_isFoldOutAutoHandOption, "Options auto hand", true);
 

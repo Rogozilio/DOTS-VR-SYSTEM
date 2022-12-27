@@ -106,9 +106,9 @@ public class HandPoseOverlay : IMGUIOverlay
         EditorGUILayout.BeginHorizontal();
         
         GUI.enabled = _isSelectedHands;
-        if (GUILayout.Button("Clear Pose", GUILayout.Width(_widthButton)))
+        if (GUILayout.Button(_handPoseHelper.isDefaultPoseExist ? "Default Pose" : "Clear Pose", GUILayout.Width(_widthButton)))
         {
-            _handPoseHelper.ClearPose(_selectedHandType);
+            _handPoseHelper.ClearOrDefaultPose(_selectedHandType);
         }
         GUI.enabled = true;
         

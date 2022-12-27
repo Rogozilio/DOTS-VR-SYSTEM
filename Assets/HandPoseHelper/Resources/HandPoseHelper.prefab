@@ -45,9 +45,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   isSelectParentHand: 1
+  defaultSaveData: {fileID: 11400000, guid: 672ad106e75da654883efe5d4faa05d5, type: 2}
   isUseFingertip: 1
-  speedRotate: {x: 0, y: 0, z: 0}
-  edgeRotate: 0
+  speedRotate: {x: 0, y: 1, z: 0}
+  maxRotate: 60
   leftHandPrefab: {fileID: 114642, guid: df4b88499f4990141938c50917087abd, type: 3}
   rightHandPrefab: {fileID: 132558, guid: 2ef55f31e68ebfd4ea9afecb17521ca9, type: 3}
   leftHandJoints:
@@ -196,7 +197,8 @@ MonoBehaviour:
       rgba: 4278512639
     - serializedVersion: 2
       rgba: 4278512639
-  popupIndexTemplate: 0
+  popupIndexTemplate: 1
+  popupIndexDefaultSaveData: 0
   saveDataSetting:
     path: Assets/PoseSaveData
     names:
