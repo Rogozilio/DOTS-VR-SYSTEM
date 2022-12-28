@@ -382,7 +382,7 @@ namespace Scripts
                 if (defaultSaveData.GetAllNames?.Count > 0)
                 {
                     var name = defaultSaveData.GetAllNames?[popupIndexDefaultSaveData];
-                    defaultSaveData.FindByName(name, out var handPoseData);
+                    var handPoseData = defaultSaveData.Load(name);
                     _leftHand.transform.localPosition = handPoseData.leftHand.attachPosition;
                     _rightHand.transform.localPosition = handPoseData.rightHand.attachPosition; 
                     SetHandPoseData(handPoseData, handType);

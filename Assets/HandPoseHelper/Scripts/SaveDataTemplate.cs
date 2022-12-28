@@ -37,11 +37,10 @@ namespace Scripts
             if(_isUseDataCollection) Debug.LogWarning("Override virtual method SaveElement() in child class");
         }
 
-        public virtual bool FindByName(string name, out HandPoseData handPoseData)
+        public virtual HandPoseData Load(string name)
         {
-            Debug.LogWarning("Override virtual method FindByName() in child class");
-            handPoseData = new HandPoseData();
-            return false;
+            Debug.LogWarning("Override virtual method Load(string name) in child class");
+            return new HandPoseData();
         }
     }
 }

@@ -35,6 +35,8 @@ namespace Editor
             {
                 if (evt.newValue)
                 {
+                    HandPoseOverlay.DoWithInstances(instance => instance.displayed = true);
+                    
                     if (_handPoseHelper) return;
 
                     var root = Resources.Load<GameObject>("HandPoseHelper");
@@ -43,6 +45,7 @@ namespace Editor
                 }
                 else
                 {
+                    HandPoseOverlay.DoWithInstances(instance => instance.displayed = false);
                     PrefabUtility.ApplyObjectOverride(_handPoseHelper.GetComponent<Scripts.HandPoseHelper>(),
                         PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(_handPoseHelper), InteractionMode.AutomatedAction);
                     if (_handPoseHelper)

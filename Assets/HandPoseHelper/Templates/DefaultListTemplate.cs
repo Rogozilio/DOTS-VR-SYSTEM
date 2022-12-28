@@ -50,18 +50,30 @@ public class DefaultListTemplate : SaveDataTemplate
         _hands.Add(hands);
     }
 
-    public override bool FindByName(string name, out HandPoseData handPoseData)
+    // public override bool FindByName(string name, out HandPoseData handPoseData)
+    // {
+    //     foreach (var data in _hands)
+    //     {
+    //         if (data.name == name)
+    //         {
+    //             handPoseData = data;
+    //             return true;
+    //         }
+    //     }
+    //
+    //     handPoseData = new HandPoseData();
+    //     return false;
+    // }
+    public override HandPoseData Load(string name)
     {
         foreach (var data in _hands)
         {
             if (data.name == name)
             {
-                handPoseData = data;
-                return true;
+                return data;
             }
         }
-
-        handPoseData = new HandPoseData();
-        return false;
+        
+        return new HandPoseData();
     }
 }

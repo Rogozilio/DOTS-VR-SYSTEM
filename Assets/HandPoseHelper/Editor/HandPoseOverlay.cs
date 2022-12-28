@@ -1,11 +1,13 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using HandPoseHelper.Scripts.Enums;
 using Scripts;
 using UnityEditor;
 using UnityEditor.Overlays;
 using UnityEngine;
 using SaveDataTemplate = Scripts.SaveDataTemplate;
+
 [Overlay(typeof(SceneView), "Hand Pose")]
 public class HandPoseOverlay : IMGUIOverlay
 {
@@ -13,7 +15,6 @@ public class HandPoseOverlay : IMGUIOverlay
 
     private bool _isShowColorFingers;
     private bool _isSelectedSaveFile;
-    private bool _isNameExist;
 
     private Texture2D _iconBone;
     private Texture2D _iconJoint;
@@ -60,6 +61,27 @@ public class HandPoseOverlay : IMGUIOverlay
     }
 
     private bool _isUseDataCollection => _template && _template.GetIsUseDataCollection;
+
+    private bool _isNameFileExist
+    {
+        get
+        {
+            var template = AssetDatabase.LoadAssetAtPath<SaveDataTemplate>(_pathAsset);
+            return template != null;
+        }
+    }
+
+    private bool _isNamePoseExist
+    {
+        get
+        {
+            if (!_isUseDataCollection) return false;
+
+            var template = AssetDatabase.LoadAssetAtPath<SaveDataTemplate>(_pathAsset);
+            return (template != null) && template.Load(_namePose).name != null;
+        }
+    }
+
     private string _pathAsset => _handPoseHelper.saveDataSetting.path + "/" + _nameSaveData + ".asset";
 
     public override void OnCreated()
@@ -104,29 +126,33 @@ public class HandPoseOverlay : IMGUIOverlay
     private void HandSettings()
     {
         EditorGUILayout.BeginHorizontal();
-        
+
         GUI.enabled = _isSelectedHands;
-        if (GUILayout.Button(_handPoseHelper.isDefaultPoseExist ? "Default Pose" : "Clear Pose", GUILayout.Width(_widthButton)))
+        if (GUILayout.Button(_handPoseHelper.isDefaultPoseExist ? "Default Pose" : "Clear Pose",
+                GUILayout.Width(_widthButton)))
         {
             _handPoseHelper.ClearOrDefaultPose(_selectedHandType);
         }
+
         GUI.enabled = true;
-        
+
         GUI.enabled = _isSelectedHand;
         if (GUILayout.Button("Mirror Pose", GUILayout.Width(_widthButton)))
         {
             var isLeftHand = (bool)Selection.activeGameObject?.name.Contains("Left");
             _handPoseHelper.MirrorPose(isLeftHand);
         }
+
         GUI.enabled = true;
-        
+
         GUI.enabled = _isSelectedHands;
         if (GUILayout.Button("Auto Pose", GUILayout.Width(_widthButton)))
         {
             _handPoseHelper.AutoPose();
         }
+
         GUI.enabled = true;
-        
+
         EditorGUILayout.EndHorizontal();
     }
 
@@ -139,7 +165,6 @@ public class HandPoseOverlay : IMGUIOverlay
             _isSelectedSaveFile = true;
             _nameSaveData = Selection.activeObject?.name;
             FindTemplateByName(Selection.activeObject?.GetType().ToString());
-            FindPoseByName();
         }
         else if (_isSelectedSaveFile)
         {
@@ -158,6 +183,8 @@ public class HandPoseOverlay : IMGUIOverlay
         if (EditorGUI.EndChangeCheck())
         {
             CreateSO(_handPoseHelper);
+            _nameSaveData = string.Empty;
+            _namePose = string.Empty;
         }
 
         GUI.enabled = true;
@@ -167,7 +194,18 @@ public class HandPoseOverlay : IMGUIOverlay
         EditorGUILayout.BeginHorizontal();
         EditorGUILayout.LabelField("Name file:", GUILayout.Width(_widthLabel));
         GUI.enabled = !_isSelectedSaveFile;
-        _nameSaveData = EditorGUILayout.TextField(_nameSaveData, GUILayout.Width(_widthField));
+        var names = GetFilenameByType(_handPoseHelper.saveDataSetting.templates[_handPoseHelper.popupIndexTemplate]
+            .GetClass());
+        if (names.Count > 0)
+        {
+            _nameSaveData = EditorGUILayout.TextField(_nameSaveData, GUILayout.Width(_widthField - 18));
+            _nameSaveData = DrawDropdown(GUILayoutUtility.GetLastRect(), GUIContent.none, names);
+        }
+        else
+        {
+            _nameSaveData = EditorGUILayout.TextField(_nameSaveData, GUILayout.Width(_widthField));
+        }
+
         GUI.enabled = true;
         EditorGUILayout.EndHorizontal();
 
@@ -177,10 +215,10 @@ public class HandPoseOverlay : IMGUIOverlay
             EditorGUILayout.LabelField("Name pose:", GUILayout.Width(_widthLabel));
             var template = AssetDatabase.LoadAssetAtPath<SaveDataTemplate>(_pathAsset);
 
-            if (_isSelectedSaveFile && template.GetAllNames != null && template.GetAllNames.Count > 0)
+            if ((_isSelectedSaveFile || _isNameFileExist) && template.GetAllNames?.Count > 0)
             {
                 _namePose = EditorGUILayout.TextField(_namePose, GUILayout.Width(_widthField - 18));
-                _namePose = DrawDropdown(GUILayoutUtility.GetLastRect(), GUIContent.none, template.GetAllNames);
+                _namePose = DrawDropdown(GUILayoutUtility.GetLastRect(), GUIContent.none, template.GetAllNames, false);
             }
             else
             {
@@ -194,25 +232,41 @@ public class HandPoseOverlay : IMGUIOverlay
         EditorGUILayout.BeginHorizontal();
         ShowButtonLoad();
 
-        if (_isSelectedSaveFile) ShowButtonOverwrite();
+        if (_isSelectedSaveFile || _isNameFileExist) ShowButtonOverwrite();
         else ShowButtonCreate();
 
-        if (_isNameExist) ShowButtonReplace();
+        if (_isNamePoseExist) ShowButtonReplace();
         else ShowButtonAdd();
         EditorGUILayout.EndHorizontal();
     }
 
-    private string DrawDropdown(Rect rect, GUIContent label, List<string> allNames)
+    private List<string> GetFilenameByType(Type type)
+    {
+        var guids = AssetDatabase.FindAssets("t:" + type, new[] { _handPoseHelper.saveDataSetting.path });
+
+        var result = new List<string>();
+        foreach (var guid in guids)
+        {
+            result.Add(Path.GetFileNameWithoutExtension(AssetDatabase.GUIDToAssetPath(guid)));
+        }
+
+        return result;
+    }
+
+    private string DrawDropdown(Rect rect, GUIContent label, List<string> allNames, bool isNameFile = true)
     {
         var newRect = new Rect(rect.x + rect.size.x - 2, rect.y, 20, 20);
         if (!EditorGUI.DropdownButton(newRect, label, FocusType.Passive))
         {
-            return _namePose;
+            return isNameFile ? _nameSaveData : _namePose;
         }
 
         void handleItemClicked(object parameter)
         {
-            _namePose = parameter.ToString();
+            if (isNameFile)
+                _nameSaveData = parameter.ToString();
+            else
+                _namePose = parameter.ToString();
         }
 
         GUI.FocusControl(null);
@@ -223,8 +277,7 @@ public class HandPoseOverlay : IMGUIOverlay
         }
 
         menu.DropDown(rect);
-
-        return _namePose;
+        return isNameFile ? _nameSaveData : _namePose;
     }
 
     private void DrawHorizontalGUILine(int height = 1)
@@ -260,23 +313,15 @@ public class HandPoseOverlay : IMGUIOverlay
         }
     }
 
-    private void FindPoseByName()
-    {
-        if (!_isUseDataCollection) return;
-
-        var template = AssetDatabase.LoadAssetAtPath<SaveDataTemplate>(_pathAsset);
-        _isNameExist = template.FindByName(_namePose, out HandPoseData handPoseData);
-    }
-
     private void ShowButtonLoad()
     {
-        GUI.enabled = _isSelectedSaveFile && (!_isUseDataCollection || (_isUseDataCollection && _isNameExist));
+        GUI.enabled = (_isSelectedSaveFile || _isNameFileExist) &&
+                      (!_isUseDataCollection || (_isUseDataCollection && _isNamePoseExist));
 
         if (GUILayout.Button("Load", GUILayout.Width(_widthButton)))
         {
             var template = AssetDatabase.LoadAssetAtPath<SaveDataTemplate>(_pathAsset);
-            template.FindByName(_namePose, out HandPoseData handPoseData);
-            var handPose = _isNameExist ? handPoseData : template.Load();
+            var handPose = _isNamePoseExist ? template.Load(_namePose) : template.Load();
 
             if (handPose.leftHand.fingerRotations.Count != _handPoseHelper.leftHandInfo.values.Count ||
                 handPose.rightHand.fingerRotations.Count != _handPoseHelper.rightHandInfo.values.Count)
@@ -284,7 +329,7 @@ public class HandPoseOverlay : IMGUIOverlay
                 Debug.LogError("Load failed. Save data do not match choice hands.");
                 return;
             }
-            
+
             _handPoseHelper.SetHandPoseData(handPose);
         }
 
@@ -325,7 +370,7 @@ public class HandPoseOverlay : IMGUIOverlay
             if (_isUseDataCollection)
                 template.Save(_handPoseHelper.GetHandPoseData(), _namePose != string.Empty ? _namePose : _nameSaveData);
             else
-                template.Save(_handPoseHelper.GetHandPoseData(), _isNameExist ? _namePose : _nameSaveData);
+                template.Save(_handPoseHelper.GetHandPoseData(), _isNamePoseExist ? _namePose : _nameSaveData);
 
             EditorUtility.SetDirty(template);
         }
@@ -346,7 +391,7 @@ public class HandPoseOverlay : IMGUIOverlay
 
     private void ShowButtonReplace()
     {
-        GUI.enabled = _isSelectedSaveFile && _isUseDataCollection;
+        GUI.enabled = (_isSelectedSaveFile || _isNameFileExist) && _isUseDataCollection;
         if (GUILayout.Button("Replace", GUILayout.Width(_widthButton)))
         {
             var template = AssetDatabase.LoadAssetAtPath<SaveDataTemplate>(_pathAsset);
