@@ -8,8 +8,14 @@ public class InputSingleton : MonoBehaviour
 {
     public static InputSingleton Instance;
 
+    [SerializeField] private Transform _player;
     [SerializeField] private InputActionAsset _inputActionAsset;
 
+    public Vector3 PositionPlayer
+    {
+        set => _player.position = value;
+        get => _player.position;
+    }
     public InputActionMap GetHead => _inputActionAsset.FindActionMap("XRI Head");
     public InputActionMap GetLeftHand => _inputActionAsset.FindActionMap("XRI LeftHand");
     public InputActionMap GetLeftHandInteraction => _inputActionAsset.FindActionMap("XRI LeftHand Interaction");

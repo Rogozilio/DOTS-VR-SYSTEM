@@ -1,6 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
-using System.Numerics;
 using Components;
 using SystemGroups;
 using Tags;
@@ -17,11 +14,11 @@ public partial class InputSystem : SystemBase
         var input = InputSingleton.Instance;
         
         if(input == null) {Debug.LogWarning("Input singleton not found"); return;}
-        
-        var camera = SystemAPI.GetSingletonRW<InputCamera>();
 
-        camera.ValueRW.position = input.GetHead.FindAction("Position").ReadValue<Vector3>();
-        camera.ValueRW.rotation = input.GetHead.FindAction("Rotation").ReadValue<Quaternion>();
+        // var camera = SystemAPI.GetSingletonRW<InputCamera>();
+        //
+        // camera.ValueRW.position = input.PositionPlayer + input.GetHead.FindAction("Position").ReadValue<Vector3>();
+        // camera.ValueRW.rotation = input.GetHead.FindAction("Rotation").ReadValue<Quaternion>();
 
         foreach (var leftHand in SystemAPI.Query<RefRW<InputHand>>().WithAll<LeftHandTag>())
         {
@@ -32,6 +29,8 @@ public partial class InputSystem : SystemBase
             leftHand.ValueRW.gripValue = input.GetLeftHandInteraction.FindAction("Select Value").ReadValue<float>();
             leftHand.ValueRW.trigger = input.GetLeftHandInteraction.FindAction("Activate").ReadValue<float>();
             leftHand.ValueRW.triggerValue = input.GetLeftHandInteraction.FindAction("Activate Value").ReadValue<float>();
+            leftHand.ValueRW.move = input.GetLeftHandLocomotion.FindAction("Move").ReadValue<Vector2>();
+            input.PositionPlayer += new Vector3(leftHand.ValueRO.move.x, 0f, leftHand.ValueRO.move.y);
         }
         
         foreach (var rightHand in SystemAPI.Query<RefRW<InputHand>>().WithAll<RightHandTag>())
@@ -43,6 +42,11 @@ public partial class InputSystem : SystemBase
             rightHand.ValueRW.gripValue = input.GetRightHandInteraction.FindAction("Select Value").ReadValue<float>();
             rightHand.ValueRW.trigger = input.GetRightHandInteraction.FindAction("Activate").ReadValue<float>();
             rightHand.ValueRW.triggerValue = input.GetRightHandInteraction.FindAction("Activate Value").ReadValue<float>();
+            rightHand.ValueRW.move = input.GetRightHandLocomotion.FindAction("Move").ReadValue<Vector2>();
         }
+        
+        var player = SystemAPI.GetSingletonRW<PlayerComponent>();
+
+        player.ValueRW.position = input.PositionPlayer;
     }
 }

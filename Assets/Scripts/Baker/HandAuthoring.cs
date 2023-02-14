@@ -16,7 +16,9 @@ public class HandBaker : Baker<HandAuthoring>
 {
     public override void Bake(HandAuthoring authoring)
     {
-        AddComponent<InputHand>();
+        InputHand inputHand = default;
+        inputHand.offsetRotation = authoring.transform.rotation;
+        AddComponent(inputHand);
         AddComponent<Hand>();
         switch (authoring.handType)
         {
