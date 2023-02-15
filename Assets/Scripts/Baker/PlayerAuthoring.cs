@@ -6,13 +6,15 @@ using UnityEngine;
 
 public class PlayerAuthoring : MonoBehaviour
 {
-    
+    public float speed = 1f;
 }
 
 public class PlayerBaker : Baker<PlayerAuthoring>
 {
     public override void Bake(PlayerAuthoring authoring)
     {
-        AddComponent<PlayerComponent>();
+        PlayerComponent player = default;
+        player.speed = authoring.speed;
+        AddComponent(player);
     }
 }

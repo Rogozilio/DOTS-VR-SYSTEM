@@ -6,7 +6,8 @@ namespace Components
 {
     public struct PlayerComponent : IComponentData
     {
-        public float3 position;
-        public quaternion rotation;
+        public float3 nextPosition;
+        public float3 velocity;
+        public float speed;
     }
 }

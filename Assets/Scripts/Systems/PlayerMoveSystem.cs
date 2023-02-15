@@ -4,7 +4,6 @@ using Unity.Burst;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
-using UnityEngine;
 
 namespace Systems
 {
@@ -37,9 +36,9 @@ namespace Systems
     [BurstCompile]
     public partial struct MovePlayerJob : IJobEntity
     {
-        public void Execute(ref TransformAspect transform, in PlayerComponent player)
+        public void Execute(ref TransformAspect transform, ref PlayerComponent player)
         {
-            transform.LocalPosition = new float3(player.position.x, 0f, player.position.z);
+            transform.LocalPosition = player.nextPosition;
         }
     }
 

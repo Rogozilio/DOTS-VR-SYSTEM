@@ -15,6 +15,8 @@ public partial class InputSystem : SystemBase
         
         if(input == null) {Debug.LogWarning("Input singleton not found"); return;}
 
+        var player = SystemAPI.GetSingletonRW<PlayerComponent>();
+        
         // var camera = SystemAPI.GetSingletonRW<InputCamera>();
         //
         // camera.ValueRW.position = input.PositionPlayer + input.GetHead.FindAction("Position").ReadValue<Vector3>();
@@ -30,7 +32,8 @@ public partial class InputSystem : SystemBase
             leftHand.ValueRW.trigger = input.GetLeftHandInteraction.FindAction("Activate").ReadValue<float>();
             leftHand.ValueRW.triggerValue = input.GetLeftHandInteraction.FindAction("Activate Value").ReadValue<float>();
             leftHand.ValueRW.move = input.GetLeftHandLocomotion.FindAction("Move").ReadValue<Vector2>();
-            input.PositionPlayer += new Vector3(leftHand.ValueRO.move.x, 0f, leftHand.ValueRO.move.y);
+            
+            player.ValueRW.velocity = new Vector3(leftHand.ValueRO.move.x, 0f, leftHand.ValueRO.move.y);
         }
         
         foreach (var rightHand in SystemAPI.Query<RefRW<InputHand>>().WithAll<RightHandTag>())
@@ -44,9 +47,12 @@ public partial class InputSystem : SystemBase
             rightHand.ValueRW.triggerValue = input.GetRightHandInteraction.FindAction("Activate Value").ReadValue<float>();
             rightHand.ValueRW.move = input.GetRightHandLocomotion.FindAction("Move").ReadValue<Vector2>();
         }
-        
-        var player = SystemAPI.GetSingletonRW<PlayerComponent>();
 
-        player.ValueRW.position = input.PositionPlayer;
+        var velocityForward = new Vector3(input.GetForwardCamera.x, 0, input.GetForwardCamera.z) * player.ValueRO.velocity.z;
+        var velocityRight = new Vector3(input.GetRightCamera.x, 0, input.GetRightCamera.z) * player.ValueRO.velocity.x;
+        
+        player.ValueRW.nextPosition = input.PositionPlayer + (velocityForward + velocityRight) * player.ValueRO.speed;
+        input.PositionPlayer = player.ValueRW.nextPosition;
+        
     }
 }
