@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -12,10 +13,16 @@ public class InputSingleton : MonoBehaviour
     [SerializeField] private Transform _camera;
     [SerializeField] private InputActionAsset _inputActionAsset;
 
-    public Vector3 PositionPlayer
+    public float3 PositionPlayer
     {
         set => _player.position = value;
         get => _player.position;
+    }
+    
+    public quaternion RotationPlayer
+    {
+        set => _player.rotation = value;
+        get => _player.rotation;
     }
 
     public Vector3 GetForwardCamera => _camera.forward;

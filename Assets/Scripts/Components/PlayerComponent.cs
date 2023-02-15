@@ -9,5 +9,12 @@ namespace Components
         public float3 nextPosition;
         public float3 velocity;
         public float speed;
+
+        public bool isAlwaysRotate;
+        public bool isTurnOnce;
+        public quaternion nextRotation;
+        public float angularVelocity;
+        public float speedRotate;
+        public int angleRotate;
     }
 }

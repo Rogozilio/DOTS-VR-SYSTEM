@@ -14,7 +14,9 @@ namespace Components
         public float gripValue;
         public float trigger;
         public float triggerValue;
-        public Vector2 move;
+        public float2 move;
+        public float2 turn;
+        public bool isTurnOnce;
 
         public float3 offsetPosition;
         public quaternion offsetRotation;

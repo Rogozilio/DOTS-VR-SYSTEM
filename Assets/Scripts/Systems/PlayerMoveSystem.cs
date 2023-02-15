@@ -39,6 +39,7 @@ namespace Systems
         public void Execute(ref TransformAspect transform, ref PlayerComponent player)
         {
             transform.LocalPosition = player.nextPosition;
+            transform.LocalRotation = player.nextRotation;
         }
     }
 

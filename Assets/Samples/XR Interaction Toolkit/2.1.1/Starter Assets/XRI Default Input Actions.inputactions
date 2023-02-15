@@ -833,6 +833,15 @@
                     "initialStateCheck": false
                 },
                 {
+                    "name": "TurnOnce",
+                    "type": "Button",
+                    "id": "b614cf2e-47ce-4bac-a956-615d1ee560fe",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
                     "name": "Turn",
                     "type": "Value",
                     "id": "9fb2eb2b-2fb6-4328-8167-10a1bf11b424",
@@ -904,6 +913,17 @@
                     "processors": "StickDeadzone",
                     "groups": "Continuous Move",
                     "action": "Move",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "127d6cc3-f2c0-489c-8e29-802356a40b2d",
+                    "path": "<XRController>{RightHand}/Primary2DAxis",
+                    "interactions": "Sector(directions=12)",
+                    "processors": "",
+                    "groups": "",
+                    "action": "TurnOnce",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }
