@@ -5,14 +5,14 @@ using UnityEngine;
 
 public class DefaultListTemplate : SaveDataTemplate
 {
-    [SerializeField] private List<HandPoseData> _hands;
+    public List<HandPoseData> clips;
 
     public override List<string> GetAllNames
     {
         get
         {
             var names = new List<string>();
-            foreach (var value in _hands)
+            foreach (var value in clips)
             {
                 names.Add(value.name);
             }
@@ -25,48 +25,34 @@ public class DefaultListTemplate : SaveDataTemplate
     {
         IsUseDataCollection = true;
 
-        _hands ??= new List<HandPoseData>();
+        clips ??= new List<HandPoseData>();
     }
 
     public override void Save(HandPoseData hands, string name)
     {
         hands.name = name;
-        _hands.Clear();
-        _hands.Add(hands);
+        this.clips.Clear();
+        this.clips.Add(hands);
     }
 
     public override void SaveElement(HandPoseData hands, string name)
     {
         hands.name = name;
-        for (var i = 0; i < _hands.Count; i++)
+        for (var i = 0; i < this.clips.Count; i++)
         {
-            if (_hands[i].name == hands.name)
+            if (this.clips[i].name == hands.name)
             {
-                _hands[i] = hands;
+                this.clips[i] = hands;
                 return;
             }
         }
         
-        _hands.Add(hands);
+        this.clips.Add(hands);
     }
-
-    // public override bool FindByName(string name, out HandPoseData handPoseData)
-    // {
-    //     foreach (var data in _hands)
-    //     {
-    //         if (data.name == name)
-    //         {
-    //             handPoseData = data;
-    //             return true;
-    //         }
-    //     }
-    //
-    //     handPoseData = new HandPoseData();
-    //     return false;
-    // }
+    
     public override HandPoseData Load(string name)
     {
-        foreach (var data in _hands)
+        foreach (var data in clips)
         {
             if (data.name == name)
             {
