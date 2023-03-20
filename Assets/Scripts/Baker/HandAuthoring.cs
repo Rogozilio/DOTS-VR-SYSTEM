@@ -1,6 +1,3 @@
-using System;
-using System.Collections;
-using System.Collections.Generic;
 using Components;
 using Tags;
 using Unity.Entities;
@@ -17,9 +14,10 @@ public class HandBaker : Baker<HandAuthoring>
     public override void Bake(HandAuthoring authoring)
     {
         InputHand inputHand = default;
-        inputHand.offsetRotation = authoring.transform.rotation;
         AddComponent(inputHand);
-        AddComponent<Hand>();
+        Hand hand = default;
+        hand.joints.AddReplicate(default, 20);
+        AddComponent(hand);
         switch (authoring.handType)
         {
             case HandType.Left:

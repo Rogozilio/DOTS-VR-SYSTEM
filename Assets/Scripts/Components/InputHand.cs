@@ -17,9 +17,5 @@ namespace Components
         public float2 move;
         public float2 turn;
         public bool isTurnOnce;
-
-        public float3 offsetPosition;
-        public quaternion offsetRotation;
-        //public object hapticDevice;
     }
 }

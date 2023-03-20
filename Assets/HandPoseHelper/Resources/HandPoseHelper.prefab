@@ -174,10 +174,10 @@ MonoBehaviour:
     - {fileID: 0}
     toggles: 0000000001010101010100010101010101010101
   colorFingers:
-    isForEachFinger: 1
+    isForEachFinger: 0
     bones:
     - serializedVersion: 2
-      rgba: 4294901778
+      rgba: 4278254335
     - serializedVersion: 2
       rgba: 4294967295
     - serializedVersion: 2
@@ -188,7 +188,7 @@ MonoBehaviour:
       rgba: 4278255360
     joints:
     - serializedVersion: 2
-      rgba: 4280221951
+      rgba: 4278255400
     - serializedVersion: 2
       rgba: 4293592319
     - serializedVersion: 2

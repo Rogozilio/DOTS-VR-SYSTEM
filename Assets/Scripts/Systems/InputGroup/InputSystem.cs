@@ -10,6 +10,21 @@ using Vector3 = UnityEngine.Vector3;
 [UpdateInGroup(typeof(InputSystemGroup))]
 public partial class InputSystem : SystemBase
 {
+    protected override void OnStartRunning()
+    {
+        var input = InputSingleton.Instance;
+
+        if (input == null)
+        {
+            Debug.LogError("Input singleton not found");
+            return;
+        }
+        
+        var player = SystemAPI.GetSingletonRW<PlayerComponent>();
+
+        player.ValueRW.nextPosition = input.PositionPlayer;
+    }
+
     protected override void OnUpdate()
     {
         var input = InputSingleton.Instance;
@@ -62,10 +77,10 @@ public partial class InputSystem : SystemBase
             switch ((int)math.sign(player.ValueRW.angularVelocity))
             {
                 case -1:
-                    player.ValueRW.angleRotate = math.min(-player.ValueRW.angleRotate, player.ValueRW.angleRotate);
+                    player.ValueRW.angleRotate = math.min(-player.ValueRO.angleRotate, player.ValueRO.angleRotate);
                     break;
                 case 1:
-                    player.ValueRW.angleRotate = math.max(-player.ValueRW.angleRotate, player.ValueRW.angleRotate);
+                    player.ValueRW.angleRotate = math.max(-player.ValueRO.angleRotate, player.ValueRO.angleRotate);
                     break;
             }
         }

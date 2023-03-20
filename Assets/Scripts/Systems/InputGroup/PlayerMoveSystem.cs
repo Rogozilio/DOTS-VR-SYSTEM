@@ -1,4 +1,5 @@
-﻿using Components;
+﻿using Aspects;
+using Components;
 using SystemGroups;
 using Unity.Burst;
 using Unity.Entities;
@@ -7,28 +8,20 @@ using Unity.Transforms;
 
 namespace Systems
 {
-    [BurstCompile]
     [UpdateInGroup(typeof(InputSystemGroup))]
     [UpdateAfter(typeof(InputSystem))]
     public partial struct PlayerMoveSystem : ISystem
     {
         [BurstCompile]
-        public void OnCreate(ref SystemState state)
-        {
-        }
-
-        [BurstCompile]
-        public void OnDestroy(ref SystemState state)
-        {
-        }
-
-        [BurstCompile]
         public void OnUpdate(ref SystemState state)
         {
             var playerJob = new MovePlayerJob();
-            var handJob = new MoveHandJob();
-
             playerJob.ScheduleParallel();
+            
+            var handJob = new MoveHandJob()
+            {
+                playerPosition = SystemAPI.GetSingleton<PlayerComponent>().nextPosition
+            };
             handJob.ScheduleParallel();
         }
     }
@@ -36,7 +29,7 @@ namespace Systems
     [BurstCompile]
     public partial struct MovePlayerJob : IJobEntity
     {
-        public void Execute(ref TransformAspect transform, ref PlayerComponent player)
+        public void Execute(ref TransformAspect transform, in PlayerComponent player)
         {
             transform.LocalPosition = player.nextPosition;
             transform.LocalRotation = player.nextRotation;
@@ -46,10 +39,11 @@ namespace Systems
     [BurstCompile]
     public partial struct MoveHandJob : IJobEntity
     {
-        public void Execute(ref TransformAspect transform, in InputHand inputHand)
+        public float3 playerPosition;
+        public void Execute(ref HandAspect handAspect)
         {
-            transform.LocalPosition = inputHand.position + inputHand.offsetPosition;
-            transform.LocalRotation = math.mul(inputHand.rotation, inputHand.offsetRotation);
+            handAspect.transform.WorldPosition = playerPosition + handAspect.GetRightPosition;
+            handAspect.transform.LocalRotation = handAspect.GetRightRotation;
         }
     }
 }
