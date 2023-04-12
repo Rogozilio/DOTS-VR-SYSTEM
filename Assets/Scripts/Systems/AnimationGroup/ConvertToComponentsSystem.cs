@@ -1,7 +1,7 @@
+using System.Collections.Generic;
 using Components;
+using Enums;
 using SystemGroups;
-using Tags;
-using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 using UnityEngine;
@@ -19,23 +19,15 @@ public partial class ConvertToComponentsSystem : SystemBase
             return;
         }
 
-        foreach (var leftHand in SystemAPI.Query<RefRW<Hand>>().WithAll<LeftHandTag>())
+        foreach (var hand in SystemAPI.Query<RefRW<Hand>>())
         {
-            var leftHandRotate = hands.GetRotateLeftHand();
+            var handRotate = new List<quaternion>();
+            handRotate = hand.ValueRO.handType == HandType.Left 
+                ? hands.GetRotateLeftHand() : hands.GetRotateRightHand();
 
-            for (var i = 0; i < leftHand.ValueRO.joints.Length; i++)
+            for (var i = 0; i < hand.ValueRO.joints.Length; i++)
             {
-                leftHand.ValueRW.joints[i] = leftHandRotate[i];
-            }
-        }
-        
-        foreach (var rightHand in SystemAPI.Query<RefRW<Hand>>().WithAll<RightHandTag>())
-        {
-            var rightHandRotate = hands.GetRotateRightHand();
-
-            for (var i = 0; i < rightHand.ValueRO.joints.Length; i++)
-            {
-                rightHand.ValueRW.joints[i] = rightHandRotate[i];
+                hand.ValueRW.joints[i] = handRotate[i];
             }
         }
     }

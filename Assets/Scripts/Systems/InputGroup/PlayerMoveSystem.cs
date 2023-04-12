@@ -12,6 +12,11 @@ namespace Systems
     [UpdateAfter(typeof(InputSystem))]
     public partial struct PlayerMoveSystem : ISystem
     {
+        public void OnCreate(ref SystemState state)
+        {
+            state.RequireForUpdate<PlayerComponent>();
+        }
+
         [BurstCompile]
         public void OnUpdate(ref SystemState state)
         {
@@ -20,7 +25,8 @@ namespace Systems
             
             var handJob = new MoveHandJob()
             {
-                playerPosition = SystemAPI.GetSingleton<PlayerComponent>().nextPosition
+                playerPosition = SystemAPI.GetSingleton<PlayerComponent>().nextPosition,
+                playerRotation = SystemAPI.GetSingleton<PlayerComponent>().nextRotation
             };
             handJob.ScheduleParallel();
         }
@@ -29,10 +35,10 @@ namespace Systems
     [BurstCompile]
     public partial struct MovePlayerJob : IJobEntity
     {
-        public void Execute(ref TransformAspect transform, in PlayerComponent player)
+        public void Execute(ref LocalTransform localTransform, in PlayerComponent player)
         {
-            transform.LocalPosition = player.nextPosition;
-            transform.LocalRotation = player.nextRotation;
+            localTransform.Position = player.nextPosition;
+            localTransform.Rotation = player.nextRotation;
         }
     }
 
@@ -40,10 +46,11 @@ namespace Systems
     public partial struct MoveHandJob : IJobEntity
     {
         public float3 playerPosition;
+        public quaternion playerRotation;
         public void Execute(ref HandAspect handAspect)
         {
-            handAspect.transform.WorldPosition = playerPosition + handAspect.GetRightPosition;
-            handAspect.transform.LocalRotation = handAspect.GetRightRotation;
+            handAspect.localTransform.ValueRW.Position = playerPosition + math.mul(playerRotation, handAspect.GetRightPosition);
+            handAspect.localTransform.ValueRW.Rotation =  math.mul(playerRotation, handAspect.GetRightRotation);
         }
     }
 }

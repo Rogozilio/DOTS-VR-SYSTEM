@@ -1,12 +1,12 @@
 ﻿using Aspects;
 using Components;
+using Enums;
 using SystemGroups;
 using TriggerEventJob;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
-using Unity.Mathematics;
 using Unity.Physics;
 using Unity.Transforms;
 
@@ -17,48 +17,53 @@ namespace Systems.Interactive
     {
         private ComponentLookup<Hand> handLookup;
         private ComponentLookup<InteractiveObject> interactiveLookup;
-        private ComponentLookup<WorldTransform> worldTransformLookup;
+        private ComponentLookup<LocalToWorld> worldTransformLookup;
 
         [BurstCompile]
         public void OnCreate(ref SystemState state)
         {
             handLookup = SystemAPI.GetComponentLookup<Hand>();
             interactiveLookup = SystemAPI.GetComponentLookup<InteractiveObject>();
-            worldTransformLookup = SystemAPI.GetComponentLookup<WorldTransform>(true);
+            worldTransformLookup = SystemAPI.GetComponentLookup<LocalToWorld>(true);
         }
 
         [BurstCompile]
         public void OnUpdate(ref SystemState state)
         {
             SimulationSingleton simulation = SystemAPI.GetSingleton<SimulationSingleton>();
-            
+
             handLookup.Update(ref state);
             interactiveLookup.Update(ref state);
             worldTransformLookup.Update(ref state);
 
-            var clearInteractiveJob = new ClearDistanceInteractiveObjectsJob().ScheduleParallel(state.Dependency);
-            var clearHandJob = new ClearHandDataJob().ScheduleParallel(state.Dependency);
-
-            state.Dependency = JobHandle.CombineDependencies(clearInteractiveJob, clearHandJob);
+            state.Dependency = new ClearInteractiveObjectsJob().ScheduleParallel(state.Dependency);
+            state.Dependency = new ClearHandDataJob()
+            {
+                interactiveObjects = interactiveLookup
+            }.ScheduleParallel(state.Dependency);
             state.Dependency = new TriggerHands()
             {
                 hands = handLookup,
                 interactiveObjects = interactiveLookup,
                 worldTransform = worldTransformLookup
-                
             }.Schedule(simulation, state.Dependency);
         }
-        
+
         [BurstCompile]
         private partial struct ClearHandDataJob : IJobEntity
         {
+            [ReadOnly] public ComponentLookup<InteractiveObject> interactiveObjects;
+
             public void Execute(ref HandAspect handAspect)
             {
-                handAspect.ClearHandData();
+                handAspect.ClearHandData(handAspect.EntityInHand != Entity.Null
+                    ? interactiveObjects[handAspect.EntityInHand].inHand
+                    : InHandType.None);
             }
         }
+
         [BurstCompile]
-        private partial struct ClearDistanceInteractiveObjectsJob : IJobEntity
+        private partial struct ClearInteractiveObjectsJob : IJobEntity
         {
             public void Execute(ref InteractiveObject interactiveObjectAspect)
             {

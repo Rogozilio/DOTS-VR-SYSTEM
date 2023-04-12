@@ -5,7 +5,7 @@ namespace SystemGroups
     [UpdateInGroup(typeof(SimulationSystemGroup))]
     [UpdateBefore(typeof(AnimationSystemGroup))]
     [UpdateAfter(typeof(InputSystemGroup))]
-    public class InteractiveSystemGroup : ComponentSystemGroup
+    public partial class InteractiveSystemGroup : ComponentSystemGroup
     {
         
     }

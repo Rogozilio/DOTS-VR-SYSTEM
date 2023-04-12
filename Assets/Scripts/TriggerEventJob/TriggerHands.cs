@@ -16,7 +16,7 @@ namespace TriggerEventJob
         public ComponentLookup<Hand> hands;
         public ComponentLookup<InteractiveObject> interactiveObjects;
 
-        [ReadOnly] public ComponentLookup<WorldTransform> worldTransform;
+        [ReadOnly] public ComponentLookup<LocalToWorld> worldTransform;
 
         public void Execute(TriggerEvent triggerEvent)
         {
@@ -35,22 +35,24 @@ namespace TriggerEventJob
 
             if (Entity.Null.Equals(handEntity)
                 || Entity.Null.Equals(interactiveEntity)) return;
-            
+
             //Init
             var hand = hands[handEntity];
-            //if(hand.isUse) return;
             var interactiveObject = interactiveObjects[interactiveEntity];
             var handWorld = worldTransform[handEntity];
             var interactiveWorld = worldTransform[interactiveEntity];
+            var isObjectInThisHand = (InHandType)(hand.handType + 1) == interactiveObject.inHand;
 
             //logic
             if(!hand.isReadyToTake) return;
-            interactiveObject.smoothlyState = SmoothlyState.Start;
-            interactiveObject.distanceToHand = math.distance(handWorld.Position, interactiveWorld.Position);
-            if (hand.inHand == Entity.Null
-                || interactiveObjects[hand.inHand].distanceToHand > interactiveObject.distanceToHand)
+            if (interactiveObject.inHand == InHandType.None)
+                interactiveObject.distanceToHand = math.distance(handWorld.Position, interactiveWorld.Position);
+
+            if ((hand.nearHand == Entity.Null ||
+                 interactiveObjects[hand.nearHand].distanceToHand > interactiveObject.distanceToHand)
+                && (interactiveObject.inHand == InHandType.None || isObjectInThisHand || interactiveObject.isSwitchHand))
             {
-                hand.inHand = interactiveEntity;
+                hand.nearHand = interactiveEntity;
                 hand.nextPose = interactiveObject.namePose;
             }
 

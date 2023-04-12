@@ -1,7 +1,6 @@
-﻿using System.Collections.Generic;
-using Components;
+﻿using Components;
+using Enums;
 using SystemGroups;
-using Tags;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
@@ -26,14 +25,12 @@ namespace Systems
                 return;
             }
 
-            foreach (var leftHand in SystemAPI.Query<RefRO<Hand>>().WithAll<LeftHandTag>())
+            foreach (var hand in SystemAPI.Query<RefRO<Hand>>())
             {
-                _leftHand = leftHand.ValueRO.joints;
-            }
-
-            foreach (var rightHand in SystemAPI.Query<RefRO<Hand>>().WithAll<RightHandTag>())
-            {
-                _rightHand = rightHand.ValueRO.joints;
+                if(hand.ValueRO.handType == HandType.Left)
+                    _leftHand = hand.ValueRO.joints;
+                else
+                    _rightHand = hand.ValueRO.joints;
             }
 
             hands.SetRotateHands(_leftHand, _rightHand);

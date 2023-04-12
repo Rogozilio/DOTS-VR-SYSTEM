@@ -1,8 +1,6 @@
-﻿using System;
-using Components;
+﻿using Components;
 using Enums;
 using Unity.Entities;
-using Unity.Mathematics;
 using Unity.Transforms;
 using UnityEngine;
 
@@ -10,28 +8,31 @@ namespace Aspects
 {
     public readonly partial struct InteractiveObjectAspect : IAspect
     {
-        public readonly TransformAspect transform;
-        private readonly RefRW<InteractiveObject> interactiveObject;
+        private readonly Entity _entity;
+        private readonly RefRW<InteractiveObject> _interactiveObject;
+        
+        public readonly RefRW<LocalTransform> localTransform; 
+        public readonly RefRO<LocalToWorld> worldTransform;
 
+        public Entity GetEntity => _entity;
         public float DistanceToHand
         {
-            get => interactiveObject.ValueRO.distanceToHand;
-            set => interactiveObject.ValueRW.distanceToHand = value;
+            get => _interactiveObject.ValueRO.distanceToHand;
+            set => _interactiveObject.ValueRW.distanceToHand = value;
         }
 
-        public SmoothlyState SmoothlyState
+        public InHandType InHand
         {
-            get => interactiveObject.ValueRO.smoothlyState;
-            set
-            {
-                if (value == SmoothlyState.Start)
-                {
-                    if(interactiveObject.ValueRO.smoothlyState == SmoothlyState.End)
-                        interactiveObject.ValueRW.smoothlyState = value;
-                    return;
-                }
-                interactiveObject.ValueRW.smoothlyState = value;
-            }
+            get => _interactiveObject.ValueRO.inHand;
+            set => _interactiveObject.ValueRW.inHand = value;
         }
+
+        public float ValueSmooth
+        {
+            get => _interactiveObject.ValueRO.valueSmooth;
+            set => _interactiveObject.ValueRW.valueSmooth = value;
+        }
+
+        public float GetBeginValueSmooth => _interactiveObject.ValueRO.beginValueSmooth;
     }
 }

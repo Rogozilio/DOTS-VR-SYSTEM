@@ -7,6 +7,8 @@ namespace Components
 {
     public struct Hand : IComponentData
     {
+        public HandType handType;
+        public Entity nearHand;
         public Entity inHand;
         public FixedString32Bytes nextPose;
         public bool isReadyToTake;

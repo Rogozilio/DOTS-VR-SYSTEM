@@ -1,11 +1,10 @@
 using System;
-using System.Collections;
-using System.Collections.Generic;
 using Components;
+using Enums;
 using Unity.Entities;
 using UnityEditor;
-using UnityEditor.Rendering;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 public class PlayerAuthoring : MonoBehaviour
 {
@@ -13,18 +12,21 @@ public class PlayerAuthoring : MonoBehaviour
     public float speedRotate = 1f;
     public bool isAlwaysRotate = true;
     public byte angleRotate;
+    public DeltaType deltaType;
 }
 
 public class PlayerBaker : Baker<PlayerAuthoring>
 {
     public override void Bake(PlayerAuthoring authoring)
     {
+        Entity entity = GetEntity(authoring, TransformUsageFlags.Dynamic);
         PlayerComponent player = default;
         player.speed = authoring.speed;
         player.speedRotate = authoring.speedRotate;
         player.isAlwaysRotate = authoring.isAlwaysRotate;
         player.angleRotate = authoring.angleRotate;
-        AddComponent(player);
+        player.deltaType = authoring.deltaType;
+        AddComponent(entity, player);
     }
 }
 
@@ -36,6 +38,7 @@ public class PlayerAuthoringEditor : Editor
     private SerializedProperty speedRotate;
     private SerializedProperty isAlwaysRotate;
     private SerializedProperty angleRotate;
+    private SerializedProperty deltaSmoothLerp;
 
     public void OnEnable()
     {
@@ -43,6 +46,7 @@ public class PlayerAuthoringEditor : Editor
         speedRotate = serializedObject.FindProperty("speedRotate");
         isAlwaysRotate = serializedObject.FindProperty("isAlwaysRotate");
         angleRotate = serializedObject.FindProperty("angleRotate");
+        deltaSmoothLerp = serializedObject.FindProperty("deltaType");
     }
 
     public override void OnInspectorGUI()
@@ -55,6 +59,9 @@ public class PlayerAuthoringEditor : Editor
         else
             EditorGUILayout.IntSlider(angleRotate, 1, 180);
         EditorGUI.indentLevel--;
+        EditorGUILayout.Space();
+        EditorGUILayout.PropertyField(deltaSmoothLerp);
+        
         serializedObject.ApplyModifiedProperties();
     }
 }

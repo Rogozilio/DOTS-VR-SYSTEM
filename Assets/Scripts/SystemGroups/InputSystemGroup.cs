@@ -5,7 +5,7 @@ namespace SystemGroups
 {
     [UpdateInGroup(typeof(SimulationSystemGroup))]
     [UpdateBefore(typeof(TransformSystemGroup))]
-    public class InputSystemGroup : ComponentSystemGroup
+    public partial class InputSystemGroup : ComponentSystemGroup
     {
         
     }

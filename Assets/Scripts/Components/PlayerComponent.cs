@@ -1,4 +1,5 @@
-﻿using Unity.Collections;
+﻿using Enums;
+using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 
@@ -16,5 +17,8 @@ namespace Components
         public float angularVelocity;
         public float speedRotate;
         public int angleRotate;
+        
+        //Smooth options
+        public DeltaType deltaType;
     }
 }

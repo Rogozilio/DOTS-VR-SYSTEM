@@ -8,6 +8,9 @@ namespace Baker
     public class InteractiveAuthoring : MonoBehaviour
     {
         public string namePose;
+        [Space] public bool isSwitchHand = true;
+        [Space][Header("Smooth object")] [Range(0, 1)]
+        public float beginValueSmooth = 0.3f;
     }
 
     public class InteractiveBaker : Baker<InteractiveAuthoring>
@@ -16,7 +19,10 @@ namespace Baker
         {
             InteractiveObject interactiveObject = default;
             interactiveObject.namePose = authoring.namePose;
-            AddComponent(interactiveObject);
+            interactiveObject.isSwitchHand = authoring.isSwitchHand;
+            interactiveObject.beginValueSmooth = authoring.beginValueSmooth;
+            Entity entity = GetEntity(authoring, TransformUsageFlags.Dynamic);
+            AddComponent(entity, interactiveObject);
         }
     }
 #if UNITY_EDITOR

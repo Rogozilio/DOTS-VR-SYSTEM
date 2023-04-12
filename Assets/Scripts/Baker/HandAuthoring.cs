@@ -1,5 +1,4 @@
 using Components;
-using Tags;
 using Unity.Entities;
 using UnityEngine;
 using Enums;
@@ -13,19 +12,12 @@ public class HandBaker : Baker<HandAuthoring>
 {
     public override void Bake(HandAuthoring authoring)
     {
+        Entity entity = GetEntity(authoring, TransformUsageFlags.Dynamic);
         InputHand inputHand = default;
-        AddComponent(inputHand);
+        AddComponent(entity, inputHand);
         Hand hand = default;
+        hand.handType = authoring.handType;
         hand.joints.AddReplicate(default, 20);
-        AddComponent(hand);
-        switch (authoring.handType)
-        {
-            case HandType.Left:
-                AddComponent<LeftHandTag>();
-                break;
-            case HandType.Right:
-                AddComponent<RightHandTag>();
-                break;
-        }
+        AddComponent(entity, hand);
     }
 }
