@@ -13,6 +13,22 @@ public class HandsSingleton : MonoBehaviour
     private List<Transform> _jointsLeftHand;
     private List<Transform> _jointsRightHand;
 
+    public float3 SetPositionLeftHand
+    {
+        set => _leftHand.position = value;
+    }
+    public float3 SetPositionRightHand
+    {
+        set => _rightHand.position = value;
+    }
+    public quaternion SetRotationLeftHand
+    {
+        set => _leftHand.rotation = value;
+    }
+    public quaternion SetRotationRightHand
+    {
+        set => _rightHand.rotation = value;
+    }
     public List<quaternion> GetRotateLeftHand() => GetRotateHand();
     public List<quaternion> GetRotateRightHand() => GetRotateHand(false);
     private List<quaternion> GetRotateHand(bool isLeftHand = true)

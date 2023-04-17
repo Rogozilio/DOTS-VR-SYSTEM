@@ -1,5 +1,8 @@
-﻿using UnityEngine;
+﻿using System;
+using System.Collections.Generic;
+using UnityEngine;
 using Components;
+using Enums;
 using Unity.Entities;
 using UnityEditor;
 
@@ -8,8 +11,10 @@ namespace Baker
     public class InteractiveAuthoring : MonoBehaviour
     {
         public string namePose;
-        [Space] public bool isSwitchHand = true;
-        [Space][Header("Smooth object")] [Range(0, 1)]
+        [Space] public HandActionType handActionType;
+        public InteractiveType interactiveType;
+
+        [Space] [Header("Smooth object")] [Range(0, 1)]
         public float beginValueSmooth = 0.3f;
     }
 
@@ -19,7 +24,8 @@ namespace Baker
         {
             InteractiveObject interactiveObject = default;
             interactiveObject.namePose = authoring.namePose;
-            interactiveObject.isSwitchHand = authoring.isSwitchHand;
+            interactiveObject.handActionType = authoring.handActionType;
+            interactiveObject.interactiveType = authoring.interactiveType;
             interactiveObject.beginValueSmooth = authoring.beginValueSmooth;
             Entity entity = GetEntity(authoring, TransformUsageFlags.Dynamic);
             AddComponent(entity, interactiveObject);
@@ -29,16 +35,68 @@ namespace Baker
     [CustomEditor(typeof(InteractiveAuthoring))]
     public class InteractiveAuthoringEditor : Editor
     {
+        private List<string> _names;
+        private int _selectedIndex;
+
+        private SerializedProperty _namePose;
+        private SerializedProperty _handActionType;
+        private SerializedProperty _interactiveType;
+        private SerializedProperty _beginValueSmooth;
+
+        public void OnEnable()
+        {
+            _names = new List<string>();
+
+            _namePose = serializedObject.FindProperty("namePose");
+            _handActionType = serializedObject.FindProperty("handActionType");
+            _interactiveType = serializedObject.FindProperty("interactiveType");
+            _beginValueSmooth = serializedObject.FindProperty("beginValueSmooth");
+
+            _selectedIndex = FindIndexName(_namePose.stringValue);
+        }
+
         public override void OnInspectorGUI()
         {
-            string[] guids = AssetDatabase.FindAssets ("t:SaveDataTemplate", null);
-            foreach (string guid in guids)
+            _names.Clear();
+
+            BrowseNames((nameFile, namePose, index) => { _names.Add(nameFile + " / " + namePose); });
+
+            _selectedIndex = EditorGUILayout.Popup("Name Pose", _selectedIndex, _names.ToArray());
+            _namePose.stringValue = _names[_selectedIndex].Split("/ ")[1];
+
+            EditorGUILayout.PropertyField(_handActionType);
+            EditorGUILayout.PropertyField(_interactiveType);
+            EditorGUILayout.Space();
+            _beginValueSmooth.floatValue = EditorGUILayout.Slider("BeginValueSmooth", _beginValueSmooth.floatValue, 0f, 1f);
+
+            serializedObject.ApplyModifiedProperties();
+        }
+
+        private int FindIndexName(string name)
+        {
+            var selectedIndex = -1;
+            BrowseNames((nameFile, namePose, index) =>
+            {
+                if (namePose == name) selectedIndex = index;
+            });
+
+            return selectedIndex;
+        }
+
+        private void BrowseNames(Action<string, string, int> action)
+        {
+            var index = 0;
+            var guids = AssetDatabase.FindAssets("t:SaveDataTemplate", null);
+            foreach (var guid in guids)
             {
                 var path = AssetDatabase.GUIDToAssetPath(guid);
-                var asd = (DefaultListTemplate)AssetDatabase.LoadAssetAtPath(path, typeof(DefaultListTemplate));
+                var defaultListTemplate =
+                    (DefaultListTemplate)AssetDatabase.LoadAssetAtPath(path, typeof(DefaultListTemplate));
+                foreach (var name in defaultListTemplate.GetAllNames)
+                {
+                    action?.Invoke(defaultListTemplate.name, name, index++);
+                }
             }
-            
-            base.OnInspectorGUI();
         }
     }
 #endif

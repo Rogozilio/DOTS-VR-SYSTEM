@@ -33,6 +33,12 @@ namespace Aspects
             set => _interactiveObject.ValueRW.valueSmooth = value;
         }
 
+        public InteractiveType InteractiveType
+        {
+            get => _interactiveObject.ValueRO.interactiveType;
+            set => _interactiveObject.ValueRW.interactiveType = value;
+        }
+
         public float GetBeginValueSmooth => _interactiveObject.ValueRO.beginValueSmooth;
     }
 }

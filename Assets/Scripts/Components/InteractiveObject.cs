@@ -10,7 +10,8 @@ namespace Components
         public float distanceToHand;
         //interactive options
         public FixedString32Bytes namePose;
-        public bool isSwitchHand;
+        public HandActionType handActionType;
+        public InteractiveType interactiveType;
         //smooth option
         public float beginValueSmooth;
         public float valueSmooth;

@@ -50,7 +50,8 @@ namespace TriggerEventJob
 
             if ((hand.nearHand == Entity.Null ||
                  interactiveObjects[hand.nearHand].distanceToHand > interactiveObject.distanceToHand)
-                && (interactiveObject.inHand == InHandType.None || isObjectInThisHand || interactiveObject.isSwitchHand))
+                && (interactiveObject.inHand == InHandType.None || isObjectInThisHand || 
+                    interactiveObject.handActionType == HandActionType.FromHandToHand))
             {
                 hand.nearHand = interactiveEntity;
                 hand.nextPose = interactiveObject.namePose;

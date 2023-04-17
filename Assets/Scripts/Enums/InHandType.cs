@@ -5,6 +5,6 @@
         None,
         Left,
         Right,
-        All
+        Both
     }
 }

@@ -6,7 +6,7 @@ using Unity.Entities;
 namespace Systems
 {
     [UpdateInGroup(typeof(AnimationSystemGroup))]
-    [UpdateAfter(typeof(ConvertToComponentsSystem))]
+    [UpdateAfter(typeof(AnimationReturnInComponent))]
     public partial struct AnimationSystem : ISystem
     {
         [BurstCompile]

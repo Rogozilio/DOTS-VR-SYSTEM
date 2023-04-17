@@ -7,7 +7,7 @@ using Unity.Mathematics;
 using UnityEngine;
 
 [UpdateInGroup(typeof(AnimationSystemGroup), OrderFirst = true)]
-public partial class ConvertToComponentsSystem : SystemBase
+public partial class AnimationReturnInComponent : SystemBase
 {
     protected override void OnUpdate()
     {

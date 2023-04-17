@@ -10,7 +10,7 @@ namespace Systems
 {
     [UpdateInGroup(typeof(AnimationSystemGroup), OrderLast = true)]
     [UpdateAfter(typeof(AnimationSystem))]
-    public partial class ConvertToGOSystem : SystemBase
+    public partial class AnimationReturnToGO : SystemBase
     {
         private FixedList512Bytes<quaternion> _leftHand;
         private FixedList512Bytes<quaternion> _rightHand;

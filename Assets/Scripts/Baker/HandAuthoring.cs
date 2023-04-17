@@ -6,6 +6,7 @@ using Enums;
 public class HandAuthoring : MonoBehaviour
 {
     public HandType handType;
+    public Vector3 offsetRotation;
 }
 
 public class HandBaker : Baker<HandAuthoring>
@@ -17,6 +18,7 @@ public class HandBaker : Baker<HandAuthoring>
         AddComponent(entity, inputHand);
         Hand hand = default;
         hand.handType = authoring.handType;
+        hand.offsetRotation = Quaternion.Euler(authoring.offsetRotation);
         hand.joints.AddReplicate(default, 20);
         AddComponent(entity, hand);
     }
