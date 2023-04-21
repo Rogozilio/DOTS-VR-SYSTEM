@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using Components;
+using EnableComponents;
 using Enums;
 using Unity.Entities;
 using UnityEditor;
@@ -27,8 +28,14 @@ namespace Baker
             interactiveObject.handActionType = authoring.handActionType;
             interactiveObject.interactiveType = authoring.interactiveType;
             interactiveObject.beginValueSmooth = authoring.beginValueSmooth;
-            Entity entity = GetEntity(authoring, TransformUsageFlags.Dynamic);
+            Entity entity = GetEntity(TransformUsageFlags.Dynamic);
             AddComponent(entity, interactiveObject);
+            EnableInLeftHand enableInLeftHand = default;
+            EnableInRightHand enableInRightHand = default;
+            AddComponent(entity, enableInLeftHand);
+            SetComponentEnabled<EnableInLeftHand>(entity, false);
+            AddComponent(entity, enableInRightHand);
+            SetComponentEnabled<EnableInRightHand>(entity, false);
         }
     }
 #if UNITY_EDITOR

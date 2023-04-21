@@ -1,7 +1,10 @@
 ﻿using Aspects;
 using Components;
+using EnableComponents;
+using Enums;
 using SystemGroups;
 using Unity.Burst;
+using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
@@ -21,15 +24,12 @@ namespace Systems
         [BurstCompile]
         public void OnUpdate(ref SystemState state)
         {
-            var playerJob = new MovePlayerJob();
-            playerJob.ScheduleParallel();
-            
-            var handJob = new MoveHandJob()
+            state.Dependency = new MovePlayerJob().ScheduleParallel(state.Dependency);
+            state.Dependency = new MoveHandJob()
             {
                 playerPosition = SystemAPI.GetSingleton<PlayerComponent>().nextPosition,
-                playerRotation = SystemAPI.GetSingleton<PlayerComponent>().nextRotation
-            };
-            handJob.ScheduleParallel();
+                playerRotation = SystemAPI.GetSingleton<PlayerComponent>().nextRotation,
+            }.ScheduleParallel(state.Dependency);
         }
     }
 
@@ -44,6 +44,7 @@ namespace Systems
     }
 
     [BurstCompile]
+    [WithDisabled(typeof(EnableStaticState))]
     public partial struct MoveHandJob : IJobEntity
     {
         public float3 playerPosition;

@@ -19,7 +19,7 @@ public class PlayerBaker : Baker<PlayerAuthoring>
 {
     public override void Bake(PlayerAuthoring authoring)
     {
-        Entity entity = GetEntity(authoring, TransformUsageFlags.Dynamic);
+        Entity entity = GetEntity(TransformUsageFlags.Dynamic);
         PlayerComponent player = default;
         player.speed = authoring.speed;
         player.speedRotate = authoring.speedRotate;

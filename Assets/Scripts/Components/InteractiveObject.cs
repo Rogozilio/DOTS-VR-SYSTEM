@@ -6,7 +6,6 @@ namespace Components
 {
     public struct InteractiveObject : IComponentData
     {
-        public InHandType inHand;
         public float distanceToHand;
         //interactive options
         public FixedString32Bytes namePose;

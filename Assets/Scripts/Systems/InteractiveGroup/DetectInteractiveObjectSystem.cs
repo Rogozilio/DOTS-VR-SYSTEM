@@ -1,30 +1,34 @@
 ﻿using Aspects;
 using Components;
-using Enums;
+using EnableComponents;
 using SystemGroups;
 using TriggerEventJob;
 using Unity.Burst;
-using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
 using Unity.Physics;
 using Unity.Transforms;
+using UnityEngine;
 
 namespace Systems.Interactive
 {
     [UpdateInGroup(typeof(InteractiveSystemGroup), OrderFirst = true)]
     public partial struct DetectInteractiveObjectSystem : ISystem
     {
-        private ComponentLookup<Hand> handLookup;
-        private ComponentLookup<InteractiveObject> interactiveLookup;
-        private ComponentLookup<LocalToWorld> worldTransformLookup;
+        private ComponentLookup<Hand> _handLookup;
+        private ComponentLookup<EnableInLeftHand> _inLeftHandLookup;
+        private ComponentLookup<EnableInRightHand> _inRightHandLookup;
+        private ComponentLookup<InteractiveObject> _interactiveLookup;
+        private ComponentLookup<LocalToWorld> _worldTransformLookup;
 
         [BurstCompile]
         public void OnCreate(ref SystemState state)
         {
-            handLookup = SystemAPI.GetComponentLookup<Hand>();
-            interactiveLookup = SystemAPI.GetComponentLookup<InteractiveObject>();
-            worldTransformLookup = SystemAPI.GetComponentLookup<LocalToWorld>(true);
+            _handLookup = SystemAPI.GetComponentLookup<Hand>();
+            _inLeftHandLookup = SystemAPI.GetComponentLookup<EnableInLeftHand>();
+            _inRightHandLookup = SystemAPI.GetComponentLookup<EnableInRightHand>();
+            _interactiveLookup = SystemAPI.GetComponentLookup<InteractiveObject>();
+            _worldTransformLookup = SystemAPI.GetComponentLookup<LocalToWorld>(true);
         }
 
         [BurstCompile]
@@ -32,42 +36,41 @@ namespace Systems.Interactive
         {
             SimulationSingleton simulation = SystemAPI.GetSingleton<SimulationSingleton>();
 
-            handLookup.Update(ref state);
-            interactiveLookup.Update(ref state);
-            worldTransformLookup.Update(ref state);
-
-            state.Dependency = new ClearInteractiveObjectsJob().ScheduleParallel(state.Dependency);
-            state.Dependency = new ClearHandDataJob()
-            {
-                interactiveObjects = interactiveLookup
-            }.ScheduleParallel(state.Dependency);
+            _handLookup.Update(ref state);
+            _inLeftHandLookup.Update(ref state);
+            _inRightHandLookup.Update(ref state);
+            _interactiveLookup.Update(ref state);
+            _worldTransformLookup.Update(ref state);
+            
+            var jobClearInteractiveObjectData = new ClearInteractiveObjectsJob().ScheduleParallel(state.Dependency);
+            var jobClearHandData = new ClearHandDataJob().ScheduleParallel(state.Dependency);
+            state.Dependency = JobHandle.CombineDependencies(jobClearInteractiveObjectData, jobClearHandData);
             state.Dependency = new TriggerHands()
             {
-                hands = handLookup,
-                interactiveObjects = interactiveLookup,
-                worldTransform = worldTransformLookup
+                hands = _handLookup,
+                interactiveObjects = _interactiveLookup,
+                inLeftHand = _inLeftHandLookup,
+                inRightHand = _inRightHandLookup,
+                worldTransform = _worldTransformLookup
             }.Schedule(simulation, state.Dependency);
         }
 
         [BurstCompile]
         private partial struct ClearHandDataJob : IJobEntity
         {
-            [ReadOnly] public ComponentLookup<InteractiveObject> interactiveObjects;
-
             public void Execute(ref HandAspect handAspect)
             {
-                handAspect.ClearHandData(handAspect.EntityInHand != Entity.Null
-                    ? interactiveObjects[handAspect.EntityInHand].inHand
-                    : InHandType.None);
+                handAspect.IsReadyToTake = handAspect.input.ValueRO.gripValue < 0.9f;
+                if(handAspect.IsReadyToTake) handAspect.ClearHandData();
             }
         }
 
         [BurstCompile]
         private partial struct ClearInteractiveObjectsJob : IJobEntity
         {
-            public void Execute(ref InteractiveObject interactiveObjectAspect)
+            public void Execute(ref InteractiveObject interactiveObject)
             {
-                interactiveObjectAspect.distanceToHand = 0;
+                interactiveObject.distanceToHand = 0;
             }
         }
     }

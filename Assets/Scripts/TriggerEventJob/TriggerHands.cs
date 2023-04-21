@@ -1,4 +1,5 @@
 ﻿using Components;
+using EnableComponents;
 using Enums;
 using Unity.Burst;
 using Unity.Collections;
@@ -15,7 +16,9 @@ namespace TriggerEventJob
     {
         public ComponentLookup<Hand> hands;
         public ComponentLookup<InteractiveObject> interactiveObjects;
-
+        
+        [ReadOnly] public ComponentLookup<EnableInLeftHand> inLeftHand;
+        [ReadOnly] public ComponentLookup<EnableInRightHand> inRightHand;
         [ReadOnly] public ComponentLookup<LocalToWorld> worldTransform;
 
         public void Execute(TriggerEvent triggerEvent)
@@ -39,18 +42,20 @@ namespace TriggerEventJob
             //Init
             var hand = hands[handEntity];
             var interactiveObject = interactiveObjects[interactiveEntity];
+            InHandType inHand = ObjectInHand(inLeftHand.IsComponentEnabled(interactiveEntity),
+                inRightHand.IsComponentEnabled(interactiveEntity));
             var handWorld = worldTransform[handEntity];
             var interactiveWorld = worldTransform[interactiveEntity];
-            var isObjectInThisHand = (InHandType)(hand.handType + 1) == interactiveObject.inHand;
-
+            var isObjectInThisHand = (InHandType)(hand.handType + 1) == inHand;
+        
             //logic
-            if(!hand.isReadyToTake) return;
-            if (interactiveObject.inHand == InHandType.None)
+            if (!hand.isReadyToTake) return;
+            if (inHand == InHandType.None)
                 interactiveObject.distanceToHand = math.distance(handWorld.Position, interactiveWorld.Position);
 
             if ((hand.nearHand == Entity.Null ||
                  interactiveObjects[hand.nearHand].distanceToHand > interactiveObject.distanceToHand)
-                && (interactiveObject.inHand == InHandType.None || isObjectInThisHand || 
+                && (inHand == InHandType.None || isObjectInThisHand ||
                     interactiveObject.handActionType == HandActionType.FromHandToHand))
             {
                 hand.nearHand = interactiveEntity;
@@ -60,6 +65,17 @@ namespace TriggerEventJob
             //result
             hands[handEntity] = hand;
             interactiveObjects[interactiveEntity] = interactiveObject;
+        }
+
+        private InHandType ObjectInHand(bool inLeftHand, bool inRightHand)
+        {
+            if (inLeftHand && inRightHand)
+                return InHandType.Both;
+            if (inLeftHand && !inRightHand)
+                return InHandType.Left;
+            if (!inLeftHand && inRightHand)
+                return InHandType.Right;
+            return InHandType.None;
         }
     }
 }

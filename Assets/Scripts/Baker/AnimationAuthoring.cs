@@ -42,7 +42,7 @@ public class AnimationBaker : Baker<AnimationAuthoring>
 
         builder.Dispose();
         AddBlobAsset(ref result, out var hash);
-        Entity entity = GetEntity(authoring, TransformUsageFlags.Dynamic);
+        Entity entity = GetEntity(TransformUsageFlags.Dynamic);
         AddComponent(entity,new AnimationsAsset()
         {
             asset = result

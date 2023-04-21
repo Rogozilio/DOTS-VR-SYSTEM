@@ -47,7 +47,9 @@ public partial class InputSystem : SystemBase
             if (hand.ValueRO.handType == HandType.Left)
             {
                 inputHand.ValueRW.position = input.GetLeftHand.FindAction("Position").ReadValue<Vector3>();
-                inputHand.ValueRW.rotation = input.GetLeftHand.FindAction("Rotation").ReadValue<Quaternion>();
+                inputHand.ValueRW.rotation = input.GetLeftHand.FindAction("Rotation").inProgress
+                    ? input.GetLeftHand.FindAction("Rotation").ReadValue<Quaternion>()
+                    : quaternion.identity;
                 inputHand.ValueRW.trackingState = input.GetLeftHand.FindAction("Tracking State").ReadValue<int>();
                 inputHand.ValueRW.grip = input.GetLeftHandInteraction.FindAction("Select").ReadValue<float>();
                 inputHand.ValueRW.gripValue =
@@ -63,7 +65,9 @@ public partial class InputSystem : SystemBase
             else
             {
                 inputHand.ValueRW.position = input.GetRightHand.FindAction("Position").ReadValue<Vector3>();
-                inputHand.ValueRW.rotation = input.GetRightHand.FindAction("Rotation").ReadValue<Quaternion>();
+                inputHand.ValueRW.rotation = input.GetRightHand.FindAction("Rotation").inProgress
+                    ? input.GetRightHand.FindAction("Rotation").ReadValue<Quaternion>()
+                    : quaternion.identity;
                 inputHand.ValueRW.trackingState = input.GetRightHand.FindAction("Tracking State").ReadValue<int>();
                 inputHand.ValueRW.grip = input.GetRightHandInteraction.FindAction("Select").ReadValue<float>();
                 inputHand.ValueRW.gripValue =

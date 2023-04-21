@@ -26,7 +26,7 @@ namespace Systems
                 if (hand.GetHandType == HandType.Left)
                 {
                     hands.SetPositionLeftHand = hand.localTransform.ValueRO.Position;
-                    hands.SetRotationLeftHand =
+                    hands.SetRotationLeftHand = 
                         math.mul(hand.localTransform.ValueRO.Rotation, hand.GetDefaultPoseRotation);
                 }
                 else

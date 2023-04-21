@@ -1,4 +1,5 @@
 trackSelection = true
+refreshSearchWindowsInPlayMode = false
 fetchPreview = true
 defaultFlags = 0
 keepOpen = false
@@ -13,6 +14,9 @@ scopes = {
 	"last_search.110DEAF1" = ""
 	"OpenInspectorPreview.110DEAF1" = "0"
 	"currentGroup.110DEAF1" = "all"
+	"last_search.0EA9CF40" = "inter"
+	"OpenInspectorPreview.0EA9CF40" = "0"
+	"currentGroup.0EA9CF40" = "all"
 }
 providers = {
 	log = {
@@ -55,6 +59,16 @@ providers = {
 		priority = 25
 		defaultAction = null
 	}
+	archetype = {
+		active = true
+		priority = 2500
+		defaultAction = null
+	}
+	journal = {
+		active = true
+		priority = 2500
+		defaultAction = null
+	}
 }
 objectSelectors = {
 }
@@ -65,9 +79,12 @@ searchItemFavorites = [
 ]
 savedSearchesSortOrder = 0
 showSavedSearchPanel = false
+hideTabs = false
 expandedQueries = [
 ]
 queryBuilder = false
 ignoredProperties = "id;name;classname;imagecontentshash"
 helperWidgetCurrentArea = "all"
 disabledIndexers = ""
+minIndexVariations = 2
+findProviderIndexHelper = true

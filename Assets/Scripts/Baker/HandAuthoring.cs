@@ -1,7 +1,9 @@
 using Components;
+using EnableComponents;
 using Unity.Entities;
 using UnityEngine;
 using Enums;
+using Unity.Mathematics;
 
 public class HandAuthoring : MonoBehaviour
 {
@@ -13,7 +15,7 @@ public class HandBaker : Baker<HandAuthoring>
 {
     public override void Bake(HandAuthoring authoring)
     {
-        Entity entity = GetEntity(authoring, TransformUsageFlags.Dynamic);
+        Entity entity = GetEntity(TransformUsageFlags.Dynamic);
         InputHand inputHand = default;
         AddComponent(entity, inputHand);
         Hand hand = default;
