@@ -46,8 +46,8 @@ namespace Systems.Interactive
                          .WithDisabled<EnableDynamicState, EnableStaticState>())
             {
                 if (!handAspect.IsTakeObject) continue;
-
-                var interactiveObjectAspect = SystemAPI.GetAspectRW<InteractiveObjectAspect>(handAspect.EntityNearHand);
+                
+                var interactiveObjectAspect = SystemAPI.GetAspect<InteractiveObjectAspect>(handAspect.EntityNearHand);
 
                 if (interactiveObjectAspect.InteractiveType == InteractiveType.Dynamic)
                     SystemAPI.SetComponentEnabled<EnableDynamicState>(handAspect.GetEntity, true);
@@ -63,7 +63,7 @@ namespace Systems.Interactive
                     ? takeDynamicAspect.hand.EntityNearHand
                     : takeDynamicAspect.hand.EntityInHand;
                 var interactiveObjectAspect =
-                    SystemAPI.GetAspectRW<InteractiveObjectAspect>(entityInteractive);
+                    SystemAPI.GetAspect<InteractiveObjectAspect>(entityInteractive);
                 takeDynamicAspect.SmoothlyDynamicTake(interactiveObjectAspect, _deltaSmoothLerp);
             }
 
@@ -73,7 +73,7 @@ namespace Systems.Interactive
                     ? takeStaticAspect.hand.EntityNearHand
                     : takeStaticAspect.hand.EntityInHand;
                 var interactiveObjectAspect =
-                    SystemAPI.GetAspectRW<InteractiveObjectAspect>(entityInteractive);
+                    SystemAPI.GetAspect<InteractiveObjectAspect>(entityInteractive);
                 takeStaticAspect.SmoothlyStaticTake(interactiveObjectAspect, _deltaSmoothLerp);
             }
         }

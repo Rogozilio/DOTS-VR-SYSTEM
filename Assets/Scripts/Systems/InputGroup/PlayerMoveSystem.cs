@@ -49,7 +49,7 @@ namespace Systems
     {
         public float3 playerPosition;
         public quaternion playerRotation;
-        public void Execute(ref HandAspect handAspect)
+        public void Execute(HandAspect handAspect)
         {
             handAspect.localTransform.ValueRW.Position = playerPosition + math.mul(playerRotation, handAspect.GetRightPosition);
             handAspect.localTransform.ValueRW.Rotation =  math.mul(playerRotation, handAspect.GetRightRotation);

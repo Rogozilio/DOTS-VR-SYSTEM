@@ -19,7 +19,7 @@ namespace Systems
         [BurstCompile]
         public partial struct MoveHandJob : IJobEntity
         {
-            public void Execute(ref AnimationAspect animationAspect)
+            public void Execute(AnimationAspect animationAspect)
             {
                 animationAspect.PlayHands();
             }

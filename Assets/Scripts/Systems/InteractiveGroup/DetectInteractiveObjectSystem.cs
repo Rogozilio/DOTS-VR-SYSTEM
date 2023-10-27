@@ -58,7 +58,7 @@ namespace Systems.Interactive
         [BurstCompile]
         private partial struct ClearHandDataJob : IJobEntity
         {
-            public void Execute(ref HandAspect handAspect)
+            public void Execute(HandAspect handAspect)
             {
                 handAspect.IsReadyToTake = handAspect.input.ValueRO.gripValue < 0.9f;
                 if(handAspect.IsReadyToTake) handAspect.ClearHandData();
