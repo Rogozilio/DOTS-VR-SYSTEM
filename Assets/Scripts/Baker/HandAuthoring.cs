@@ -23,5 +23,12 @@ public class HandBaker : Baker<HandAuthoring>
         hand.offsetRotation = Quaternion.Euler(authoring.offsetRotation);
         hand.joints.AddReplicate(default, 20);
         AddComponent(entity, hand);
+        
+        EnableDynamicState enableDynamicState = default;
+        EnableStaticState enableStaticState = default;
+        AddComponent(entity, enableDynamicState);
+        AddComponent(entity, enableStaticState);
+        SetComponentEnabled<EnableDynamicState>(entity, false);
+        SetComponentEnabled<EnableStaticState>(entity, false);
     }
 }

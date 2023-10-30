@@ -1,15 +1,10 @@
-﻿using System;
-using Aspects;
+﻿using Aspects;
 using Components;
 using EnableComponents;
 using Enums;
 using SystemGroups;
 using Unity.Burst;
-using Unity.Collections;
-using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
-using Unity.Transforms;
-using UnityEngine;
 
 namespace Systems.Interactive
 {
@@ -77,9 +72,10 @@ namespace Systems.Interactive
                 takeStaticAspect.SmoothlyStaticTake(interactiveObjectAspect, _deltaSmoothLerp);
             }
         }
-
+        
         public void OnStopRunning(ref SystemState state)
         {
+            
         }
     }
 }
