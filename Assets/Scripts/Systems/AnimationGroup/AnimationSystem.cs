@@ -1,7 +1,9 @@
-﻿using Aspects;
+﻿using System;
+using Aspects;
 using SystemGroups;
 using Unity.Burst;
 using Unity.Entities;
+using Object = UnityEngine.Object;
 
 namespace Systems
 {

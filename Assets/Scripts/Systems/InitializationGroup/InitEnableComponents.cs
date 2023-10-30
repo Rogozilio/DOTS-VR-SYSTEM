@@ -8,7 +8,7 @@ using UnityEngine;
 namespace Systems.InitializationGroup
 {
     [UpdateInGroup(typeof(InitializationSystemGroup))]
-    public partial struct InitEnableComponents : ISystem, ISystemStartStop
+    public partial struct InitEnableComponents : ISystem
     {
         private bool _isCreateEnableStaticComponent;
         private bool _isCreateEnableDynamicComponent;
@@ -54,11 +54,6 @@ namespace Systems.InitializationGroup
             }
 
             state.Enabled = false;
-        }
-
-        [BurstCompile]
-        public void OnStopRunning(ref SystemState state)
-        {
         }
     }
 }
