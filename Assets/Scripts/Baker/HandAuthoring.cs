@@ -3,7 +3,6 @@ using EnableComponents;
 using Unity.Entities;
 using UnityEngine;
 using Enums;
-using Unity.Mathematics;
 
 public class HandAuthoring : MonoBehaviour
 {
