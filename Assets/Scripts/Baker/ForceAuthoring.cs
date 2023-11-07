@@ -23,6 +23,8 @@ namespace Baker
             Raycast raycast = default;
             raycast.directionType = authoring.directionType;
             raycast.lenght = authoring.lenght;
+            raycast.belongTo = authoring.belongTo;
+            raycast.collidesWith = authoring.collidesWith;
             AddComponent(entity, raycast);
         }
     }
