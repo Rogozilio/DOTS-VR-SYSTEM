@@ -3,6 +3,7 @@ using EnableComponents;
 using Unity.Entities;
 using UnityEngine;
 using Enums;
+using Tags;
 
 public class HandAuthoring : MonoBehaviour
 {
@@ -22,7 +23,8 @@ public class HandBaker : Baker<HandAuthoring>
         hand.offsetRotation = Quaternion.Euler(authoring.offsetRotation);
         hand.joints.AddReplicate(default, 20);
         AddComponent(entity, hand);
-        
+        AddComponent(entity, (authoring.handType == HandType.Left ? typeof(LeftHandTag) : typeof(RightHandTag)));
+
         EnableDynamicState enableDynamicState = default;
         EnableStaticState enableStaticState = default;
         AddComponent(entity, enableDynamicState);

@@ -28,8 +28,8 @@ namespace Systems.Raycast
                     End = force.EndPoint,
                     Filter = new CollisionFilter()
                     {
-                        BelongsTo = force.BelongTo.Value,
-                        CollidesWith = force.CollidesWith.Value,// all 1s, so all layers, collide with everything
+                        //BelongsTo = force.BelongTo.Value,
+                        //CollidesWith = force.CollidesWith.Value,// all 1s, so all layers, collide with everything
                         GroupIndex = 0
                     }
                 };

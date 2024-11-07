@@ -9,8 +9,5 @@ namespace Components
         public DirectionType directionType;
         public float lenght;
         public Entity hitEntity;
-
-        public PhysicsCategoryTags belongTo;
-        public PhysicsCategoryTags collidesWith;
     }
 }

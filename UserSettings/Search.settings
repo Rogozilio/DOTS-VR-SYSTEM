@@ -17,6 +17,11 @@ scopes = {
 	"last_search.0EA9CF40" = "inter"
 	"OpenInspectorPreview.0EA9CF40" = "0"
 	"currentGroup.0EA9CF40" = "all"
+	"picker_window_position_offset.E06AA71F" = "78;393;320;550"
+	"picker_search_text.E06AA71F" = ""
+	"last_search.E06AA71F" = ""
+	"OpenInspectorPreview.E06AA71F" = "0"
+	"currentGroup.E06AA71F" = "all"
 }
 providers = {
 	log = {
@@ -67,6 +72,11 @@ providers = {
 	journal = {
 		active = true
 		priority = 2500
+		defaultAction = null
+	}
+	profilermarkers = {
+		active = false
+		priority = 100
 		defaultAction = null
 	}
 }

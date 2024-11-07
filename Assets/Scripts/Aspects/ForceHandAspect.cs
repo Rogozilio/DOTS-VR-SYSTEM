@@ -16,8 +16,5 @@ namespace Aspects
         public float3 EndPoint =>
             _localToWorld.ValueRO.Position + _localToWorld.ValueRO.Value[(int)_raycast.ValueRO.directionType].xyz *
             _raycast.ValueRO.lenght;
-        
-        public PhysicsCategoryTags BelongTo => _raycast.ValueRO.belongTo;
-        public PhysicsCategoryTags CollidesWith => _raycast.ValueRO.collidesWith;
     }
 }

@@ -13,7 +13,6 @@ using UnityEngine;
 namespace Systems
 {
     [UpdateInGroup(typeof(InputSystemGroup))]
-    [UpdateAfter(typeof(InputSystem))]
     public partial struct PlayerMoveSystem : ISystem
     {
         public void OnCreate(ref SystemState state)

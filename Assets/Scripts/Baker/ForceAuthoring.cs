@@ -10,9 +10,6 @@ namespace Baker
     {
         public DirectionType directionType = DirectionType.Forward;
         public float lenght = 10f;
-        [Space]
-        public PhysicsCategoryTags belongTo;
-        public PhysicsCategoryTags collidesWith;
     }
     
     public class ForceBaker : Baker<ForceAuthoring>
@@ -23,8 +20,6 @@ namespace Baker
             Raycast raycast = default;
             raycast.directionType = authoring.directionType;
             raycast.lenght = authoring.lenght;
-            raycast.belongTo = authoring.belongTo;
-            raycast.collidesWith = authoring.collidesWith;
             AddComponent(entity, raycast);
         }
     }

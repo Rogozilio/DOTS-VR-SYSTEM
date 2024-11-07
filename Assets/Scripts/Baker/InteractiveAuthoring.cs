@@ -74,7 +74,8 @@ namespace Baker
             EditorGUILayout.PropertyField(_handActionType);
             EditorGUILayout.PropertyField(_interactiveType);
             EditorGUILayout.Space();
-            _beginValueSmooth.floatValue = EditorGUILayout.Slider("BeginValueSmooth", _beginValueSmooth.floatValue, 0f, 1f);
+            _beginValueSmooth.floatValue =
+                EditorGUILayout.Slider("BeginValueSmooth", _beginValueSmooth.floatValue, 0f, 1f);
 
             serializedObject.ApplyModifiedProperties();
         }
@@ -97,12 +98,12 @@ namespace Baker
             foreach (var guid in guids)
             {
                 var path = AssetDatabase.GUIDToAssetPath(guid);
-                var defaultListTemplate =
-                    (DefaultListTemplate)AssetDatabase.LoadAssetAtPath(path, typeof(DefaultListTemplate));
-                foreach (var name in defaultListTemplate.GetAllNames)
-                {
-                    action?.Invoke(defaultListTemplate.name, name, index++);
-                }
+                //var defaultListTemplate =
+                //(DefaultListTemplate)AssetDatabase.LoadAssetAtPath(path, typeof(DefaultListTemplate));
+                //foreach (var name in defaultListTemplate.GetAllNames)
+                //{
+                //action?.Invoke(defaultListTemplate.name, name, index++);
+                //}
             }
         }
     }

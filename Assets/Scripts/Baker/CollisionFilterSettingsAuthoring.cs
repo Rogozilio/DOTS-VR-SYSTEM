@@ -8,11 +8,9 @@ namespace Baker
 {
     public class CollisionFilterSettingsAuthoring : MonoBehaviour
     {
-        public PhysicsCategoryTags itemBelongTo;
-        public PhysicsCategoryTags itemCollidesWith;
+        
         public int itemGroupIndex = 0;
-        public PhysicsCategoryTags otherBelongTo;
-        public PhysicsCategoryTags otherCollidesWith;
+      
         public int otherGroupIndex = 0;
     }
 
@@ -23,12 +21,9 @@ namespace Baker
             var entity = GetEntity(TransformUsageFlags.None);
             CollisionFilterSettings collisionFilterSettings = default;
 
-            collisionFilterSettings.itemCollisionFilter.BelongsTo = authoring.itemBelongTo.Value;
-            collisionFilterSettings.itemCollisionFilter.CollidesWith = authoring.itemCollidesWith.Value;
+            
             collisionFilterSettings.itemCollisionFilter.GroupIndex = authoring.itemGroupIndex;
-
-            collisionFilterSettings.otherCollisionFilter.BelongsTo = authoring.otherBelongTo.Value;
-            collisionFilterSettings.otherCollisionFilter.CollidesWith = authoring.otherCollidesWith.Value;
+            
             collisionFilterSettings.otherCollisionFilter.GroupIndex = authoring.otherGroupIndex;
 
             AddComponent(entity, collisionFilterSettings);
